@@ -3,8 +3,10 @@ module vault
 go 1.23.4
 
 require (
+	github.com/getkin/kin-openapi v0.127.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
+	github.com/oapi-codegen/runtime v1.1.1
 	github.com/rs/zerolog v1.33.0
 )
 
@@ -14,7 +16,6 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
-	github.com/getkin/kin-openapi v0.127.0 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
