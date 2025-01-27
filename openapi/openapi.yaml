@@ -8,6 +8,12 @@ paths:
   /items:
     get:
       operationId: GetItems
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+          required: true
       responses:
         200:
           description: All items belonging to a user
@@ -37,11 +43,8 @@ components:
       type: object
       required:
        - message
-       - title
       properties:
         message:
-          type: string
-        title:
           type: string
 
     Item:

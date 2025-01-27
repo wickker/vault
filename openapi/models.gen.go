@@ -6,11 +6,15 @@ package openapi
 // Error defines model for Error.
 type Error struct {
 	Message string `json:"message"`
-	Title   string `json:"title"`
 }
 
 // Item defines model for Item.
 type Item struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+// GetItemsParams defines parameters for GetItems.
+type GetItemsParams struct {
+	Id string `form:"id" json:"id"`
 }

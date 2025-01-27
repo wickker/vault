@@ -17,6 +17,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
 )
 
@@ -24,7 +25,7 @@ import (
 type ServerInterface interface {
 
 	// (GET /items)
-	GetItems(c *gin.Context)
+	GetItems(c *gin.Context, params GetItemsParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -39,6 +40,26 @@ type MiddlewareFunc func(c *gin.Context)
 // GetItems operation middleware
 func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetItemsParams
+
+	// ------------- Required query parameter "id" -------------
+
+	if paramValue := c.Query("id"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument id is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "id", c.Request.URL.Query(), &params.Id)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -46,7 +67,7 @@ func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetItems(c)
+	siw.Handler.GetItems(c, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -80,6 +101,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 }
 
 type GetItemsRequestObject struct {
+	Params GetItemsParams
 }
 
 type GetItemsResponseObject interface {
@@ -139,8 +161,10 @@ type strictHandler struct {
 }
 
 // GetItems operation middleware
-func (sh *strictHandler) GetItems(ctx *gin.Context) {
+func (sh *strictHandler) GetItems(ctx *gin.Context, params GetItemsParams) {
 	var request GetItemsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GetItems(ctx, request.(GetItemsRequestObject))
@@ -166,12 +190,12 @@ func (sh *strictHandler) GetItems(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xSzWrjQAx+FaPdo7G9u9nL3HooJS9QAqWHia04CrY01SiFEPLuZcZxWkgo7aW+jPDo",
-	"+5PmCK2MQRjZIrgjxHaLo8/lvapoKoJKQDXC/HvEGH2PqbRDQHAQTYl7OJVgZMOtm1MJii97UuzAPV0o",
-	"ZsBzOQNkvcPWEtXScLwWp+4DO7Fhj5q62Y9f0KUOzq3XiqmXeCOZZYoBj34/GJTwihpJGBz8qZqqSYIS",
-	"kH0gcPCvaqoFlBC8bbPHmgzHXPVo6UgBvJHwsgMHD2jL3JC8xSAcp2h/myYdrbAhZ5wPYaA2I+tdTPrz",
-	"fvIoZpXfihtw8Kt+32R9XmOdp3i6hPWq/jBl7TC2SsGmXHfDUGTCYo2DcE/cFyaFL/ZxGvBitfqWu89M",
-	"TQ/rhovzRQn/f1Atf28BAAD//xYR1E8HAwAA",
+	"H4sIAAAAAAAC/7ySzWrrQAyFX8Xo3qWxfW/Tzey6KCUvUAIhi4mtOAqen2jkQjB+9zJj5wcSSrupNyM8",
+	"xzqfdDxA7Yx3Fq0EUAOEeo9Gp/KV2XEsPDuPLITptcEQdIuxlJNHUBCEybYwjjkwHntibECtL8JNfha6",
+	"7QFrgTGHpaC5b03NTVeygi1yVFttvuFHDczSe8eoJbtzqQtJF+/edd8J5PCBHMhZUPCvqIoqGjqPVnsC",
+	"BU9FVSwgB69lnxhLEjSpalHiEQfQQs4uG1DwhrJMgvgJa4OCHECtB6DocOyRT2dMNSFfZxDuMZ8jeDTv",
+	"JoqDdzZM+/pfVfGonRW0CUZ731GdcMpDiEMNN/0u6H8Zd6DgT3kNv5yTL1M042WDmlmfpgU2GGomL9Oy",
+	"XrouSw2zLXbOtmTbTFymsz5MqS1Wqx/RfQU1/YsPKOaLHJ5/0S09nwEAAP//zKh6lToDAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -18,7 +18,9 @@ func main() {
 	router := setupGin()
 	vaultService := services.NewVaultService()
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
-	openapi.RegisterHandlers(router, vaultHandler)
+	openapi.RegisterHandlersWithOptions(router, vaultHandler, openapi.GinServerOptions{
+		ErrorHandler: errorHandler,
+	})
 
 	server := &http.Server{
 		Addr:    ":9000",
@@ -60,4 +62,11 @@ func gracefulShutdown(server *http.Server) {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal().Err(err).Msg("Unable to shutdown server.")
 	}
+}
+
+func errorHandler(c *gin.Context, err error, statusCode int) {
+	log.Err(err).Msgf("Error occurred on request %s %s", c.Request.Method, c.Request.URL.Path)
+	c.JSON(statusCode, openapi.Error{
+		Message: err.Error(),
+	})
 }
