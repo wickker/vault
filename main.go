@@ -10,14 +10,21 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"vault/openapi"
+	"vault/services"
 )
 
 func main() {
-	r := setupGin()
+	router := setupGin()
+	vaultService := services.NewVaultService()
+	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
+	openapi.RegisterHandlersWithOptions(router, vaultHandler, openapi.GinServerOptions{
+		ErrorHandler: errorHandler,
+	})
 
 	server := &http.Server{
 		Addr:    ":9000",
-		Handler: r,
+		Handler: router,
 	}
 
 	// initializing the server in a goroutine so that it does not block graceful shutdown
@@ -55,4 +62,11 @@ func gracefulShutdown(server *http.Server) {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal().Err(err).Msg("Unable to shutdown server.")
 	}
+}
+
+func errorHandler(c *gin.Context, err error, statusCode int) {
+	log.Err(err).Msgf("Error occurred on request %s %s", c.Request.Method, c.Request.URL.Path)
+	c.JSON(statusCode, openapi.Error{
+		Message: err.Error(),
+	})
 }

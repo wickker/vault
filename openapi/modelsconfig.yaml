@@ -1,0 +1,5 @@
+package: openapi
+output: openapi/models.gen.go
+generate:
+  strict-server: true
+  models: true
