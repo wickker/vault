@@ -10,14 +10,19 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"vault/openapi"
+	"vault/services"
 )
 
 func main() {
-	r := setupGin()
+	router := setupGin()
+	vaultService := services.NewVaultService()
+	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
+	openapi.RegisterHandlers(router, vaultHandler)
 
 	server := &http.Server{
 		Addr:    ":9000",
-		Handler: r,
+		Handler: router,
 	}
 
 	// initializing the server in a goroutine so that it does not block graceful shutdown
