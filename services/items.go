@@ -6,7 +6,6 @@ import (
 )
 
 func (v *VaultService) GetItems(_ context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
-
 	return openapi.GetItems200JSONResponse{
 		{
 			Id:   1,

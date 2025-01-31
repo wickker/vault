@@ -86,6 +86,7 @@ func loadEnv() config.EnvConfig {
 	if err := godotenv.Load(); err != nil {
 		log.Warn().Msg("Unable to read from .env file.")
 	}
+
 	var envCfg config.EnvConfig
 	if err := env.Parse(&envCfg); err != nil {
 		log.Err(err).Msg("Unable to parse environment variables to struct.")

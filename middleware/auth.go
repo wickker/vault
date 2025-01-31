@@ -1,59 +1,49 @@
 package middleware
 
 import (
-	"encoding/json"
-	"github.com/clerk/clerk-sdk-go/v2"
-	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
+	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/net/context"
 	"net/http"
+	"strings"
 	"vault/openapi"
 )
 
 func Auth() gin.HandlerFunc {
-	return gin.WrapH(clerkhttp.WithHeaderAuthorization()(auth()))
-}
+	return func(c *gin.Context) {
+		token := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+		token = strings.TrimPrefix(token, "Bearer ")
 
-func auth() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		claims, ok := clerk.SessionClaimsFromContext(ctx)
-		if !ok {
-			w.WriteHeader(http.StatusUnauthorized)
-			writeError(w, "Unauthorized access")
+		claims, err := jwt.Verify(c, &jwt.VerifyParams{
+			Token: token,
+			// TODO: Cache JWK to minimize calls to Clerk API
+		})
+		if err != nil {
+			log.Err(err).Msg("Unable to verify Clerk JWT.")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, openapi.Error{
+				Message: err.Error(),
+			})
 			return
 		}
 
-		usr, err := user.Get(ctx, claims.Subject)
+		u, err := user.Get(c, claims.Subject)
 		if err != nil {
 			log.Err(err).Msg("Unable to get user from Clerk.")
-			w.WriteHeader(http.StatusUnauthorized)
-			writeError(w, err.Error())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, openapi.Error{
+				Message: err.Error(),
+			})
 			return
 		}
-		if usr == nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			writeError(w, "User does not exist")
+		if u == nil {
+			log.Error().Msg("Clerk user is nil.")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, openapi.Error{
+				Message: "Clerk user is nil",
+			})
 			return
 		}
 
-		setContextValue(r, "userID", usr.ID)
-		if len(usr.EmailAddresses) > 0 {
-			setContextValue(r, "userEmail", usr.EmailAddresses[0].EmailAddress)
-		}
+		c.Set("user", u)
+		c.Next()
 	}
-}
-
-func writeError(w http.ResponseWriter, message string) {
-	errMsg := openapi.Error{
-		Message: message,
-	}
-	bytes, _ := json.Marshal(errMsg)
-	_, _ = w.Write(bytes)
-}
-
-func setContextValue(r *http.Request, key, value string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), key, value))
 }
