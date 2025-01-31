@@ -5,9 +5,6 @@ import (
 	"errors"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
-	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
-	"github.com/clerk/clerk-sdk-go/v2/user"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -17,6 +14,7 @@ import (
 	"syscall"
 	"time"
 	"vault/config"
+	"vault/middleware"
 	"vault/openapi"
 	"vault/services"
 )
@@ -26,7 +24,7 @@ func main() {
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
-	router := setupGin()
+	router := setupGin(envCfg)
 
 	vaultService := services.NewVaultService()
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
@@ -49,34 +47,10 @@ func main() {
 	gracefulShutdown(server)
 }
 
-func hello() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		claims, ok := clerk.SessionClaimsFromContext(ctx)
-		if !ok {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"access": "unauthorized"}`))
-			return
-		}
-
-		usr, err := user.Get(ctx, claims.Subject)
-		if err != nil {
-			panic(err)
-		}
-		if usr == nil {
-			w.Write([]byte("User does not exist"))
-			return
-		}
-
-		w.Write([]byte("Hello " + *usr.FirstName))
-	}
-}
-
-func setupGin() *gin.Engine {
+func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
-
-	r.Use(CORS())
-	r.Use(gin.WrapH(clerkhttp.WithHeaderAuthorization()(hello())))
+	r.Use(middleware.Cors(envCfg))
+	r.Use(middleware.Auth())
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
@@ -117,44 +91,4 @@ func loadEnv() config.EnvConfig {
 		log.Err(err).Msg("Unable to parse environment variables to struct.")
 	}
 	return envCfg
-}
-
-func CORS() gin.HandlerFunc {
-	// creds of otterlite
-	corsConfig := cors.Config{
-		AllowMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodDelete,
-			http.MethodPatch,
-			http.MethodOptions,
-			http.MethodHead,
-		},
-		AllowCredentials: true,
-		AllowHeaders: []string{
-			"Origin",
-			"Content-Length",
-			"Content-Type",
-			"Access-Control-Allow-Headers",
-			"Accept",
-			"X-Requested-With",
-			"Access-Control-Request-Method",
-			"Access-Control-Request-Headers",
-			"Access-Control-Allow-Credentials",
-			"Access-Control-Allow-Origin",
-			"Authorization",
-			"X-SC-Organization-ID",
-		},
-		MaxAge: 12 * time.Hour,
-	}
-
-	//if cfg.IsDev() {
-	corsConfig.AllowOriginFunc = func(origin string) bool { return true }
-	//} else {
-	//	allowedOrigins := strings.Split(cfg.FrontendOrigin, ",")
-	//	corsConfig.AllowOrigins = allowedOrigins
-	//}
-
-	return cors.New(corsConfig)
 }
