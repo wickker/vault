@@ -7,10 +7,12 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 	"vault/config"
@@ -20,6 +22,11 @@ import (
 )
 
 func main() {
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+	zerolog.ErrorStackMarshaler = func(err error) interface{} {
+		return string(debug.Stack())
+	}
+
 	envCfg := loadEnv()
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
@@ -50,6 +57,7 @@ func main() {
 func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
+	r.Use(middleware.RequestID())
 	r.Use(middleware.Auth())
 
 	r.GET("/", func(c *gin.Context) {

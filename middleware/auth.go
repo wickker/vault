@@ -12,7 +12,7 @@ import (
 
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+		token := strings.TrimSpace(c.GetHeader("Authorization"))
 		token = strings.TrimPrefix(token, "Bearer ")
 
 		claims, err := jwt.Verify(c, &jwt.VerifyParams{
