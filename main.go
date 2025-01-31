@@ -22,10 +22,7 @@ import (
 )
 
 func main() {
-	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
-	zerolog.ErrorStackMarshaler = func(err error) interface{} {
-		return string(debug.Stack())
-	}
+	setupLogger()
 
 	envCfg := loadEnv()
 
@@ -52,6 +49,13 @@ func main() {
 	}()
 
 	gracefulShutdown(server)
+}
+
+func setupLogger() {
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+	zerolog.ErrorStackMarshaler = func(err error) interface{} {
+		return string(debug.Stack())
+	}
 }
 
 func setupGin(envCfg config.EnvConfig) *gin.Engine {
