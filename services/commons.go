@@ -4,15 +4,20 @@ import (
 	"context"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"vault/db/sqlc"
 	"vault/openapi"
 )
 
-type VaultService struct{}
+type VaultService struct {
+	queries *sqlc.Queries
+}
 
 var _ openapi.StrictServerInterface = (*VaultService)(nil)
 
-func NewVaultService() *VaultService {
-	return &VaultService{}
+func NewVaultService(queries *sqlc.Queries) *VaultService {
+	return &VaultService{
+		queries: queries,
+	}
 }
 
 func (v *VaultService) getLogger(c context.Context) zerolog.Logger {

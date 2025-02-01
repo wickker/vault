@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 	"vault/config"
+	"vault/db/sqlc"
 	"vault/middleware"
 	"vault/openapi"
 	"vault/services"
@@ -32,13 +33,13 @@ func main() {
 		log.Fatal().Err(err).Msg("Unable to connect to database.")
 	}
 	defer pool.Close()
-	//queries := sqlc.New(pool)
+	queries := sqlc.New(pool)
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
 	router := setupGin(envCfg)
 
-	vaultService := services.NewVaultService()
+	vaultService := services.NewVaultService(queries)
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
 	openapi.RegisterHandlersWithOptions(router.Group("protected"), vaultHandler, openapi.GinServerOptions{
 		ErrorHandler: errorHandler,
