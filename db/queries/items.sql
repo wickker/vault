@@ -7,5 +7,5 @@ RETURNING *;
 SELECT id, name
 FROM items
 WHERE clerk_user_id = $1
-AND deleted_at IS NULL
+  AND deleted_at IS NULL
 ORDER BY created_at DESC;

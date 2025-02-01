@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -25,6 +26,13 @@ func main() {
 	setupLogger()
 
 	envCfg := loadEnv()
+
+	pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to connect to database.")
+	}
+	defer pool.Close()
+	//queries := sqlc.New(pool)
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
