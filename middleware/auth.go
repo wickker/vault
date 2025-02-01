@@ -12,6 +12,10 @@ import (
 
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.URL.Path == "/" {
+			return
+		}
+
 		token := strings.TrimSpace(c.GetHeader("Authorization"))
 		token = strings.TrimPrefix(token, "Bearer ")
 
