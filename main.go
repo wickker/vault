@@ -32,7 +32,7 @@ func main() {
 
 	vaultService := services.NewVaultService()
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
-	openapi.RegisterHandlersWithOptions(router, vaultHandler, openapi.GinServerOptions{
+	openapi.RegisterHandlersWithOptions(router.Group("protected"), vaultHandler, openapi.GinServerOptions{
 		ErrorHandler: errorHandler,
 	})
 
