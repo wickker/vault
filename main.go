@@ -3,19 +3,33 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/caarlos0/env/v11"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
+	"vault/config"
+	"vault/middleware"
 	"vault/openapi"
 	"vault/services"
 )
 
 func main() {
-	router := setupGin()
+	setupLogger()
+
+	envCfg := loadEnv()
+
+	clerk.SetKey(envCfg.ClerkSecretKey)
+
+	router := setupGin(envCfg)
+
 	vaultService := services.NewVaultService()
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
 	openapi.RegisterHandlersWithOptions(router, vaultHandler, openapi.GinServerOptions{
@@ -37,10 +51,18 @@ func main() {
 	gracefulShutdown(server)
 }
 
-func setupGin() *gin.Engine {
-	r := gin.Default()
+func setupLogger() {
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+	zerolog.ErrorStackMarshaler = func(err error) interface{} {
+		return string(debug.Stack())
+	}
+}
 
-	// TODO: Add middleware
+func setupGin(envCfg config.EnvConfig) *gin.Engine {
+	r := gin.Default()
+	r.Use(middleware.Cors(envCfg))
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Auth())
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
@@ -66,7 +88,20 @@ func gracefulShutdown(server *http.Server) {
 
 func errorHandler(c *gin.Context, err error, statusCode int) {
 	log.Err(err).Msgf("Error occurred on request %s %s", c.Request.Method, c.Request.URL.Path)
+
 	c.JSON(statusCode, openapi.Error{
 		Message: err.Error(),
 	})
+}
+
+func loadEnv() config.EnvConfig {
+	if err := godotenv.Load(); err != nil {
+		log.Warn().Msg("Unable to read from .env file.")
+	}
+
+	var envCfg config.EnvConfig
+	if err := env.Parse(&envCfg); err != nil {
+		log.Err(err).Msg("Unable to parse environment variables to struct.")
+	}
+	return envCfg
 }

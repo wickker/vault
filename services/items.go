@@ -5,7 +5,9 @@ import (
 	"vault/openapi"
 )
 
-func (v *VaultService) GetItems(_ context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+func (v *VaultService) GetItems(c context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+	logger := v.getLogger(c)
+	logger.Info().Msg("Test")
 
 	return openapi.GetItems200JSONResponse{
 		{
