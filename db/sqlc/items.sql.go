@@ -103,7 +103,7 @@ func (q *Queries) ListItemsByUser(ctx context.Context, clerkUserID string) ([]Li
 	return items, nil
 }
 
-const updateRecord = `-- name: UpdateRecord :one
+const updateItem = `-- name: UpdateItem :one
 UPDATE items
 SET name = $1
 WHERE id = $2
@@ -111,14 +111,14 @@ AND clerk_user_id = $3
 RETURNING id, name, clerk_user_id, created_at, updated_at, deleted_at
 `
 
-type UpdateRecordParams struct {
+type UpdateItemParams struct {
 	Name        string
 	ID          int32
 	ClerkUserID string
 }
 
-func (q *Queries) UpdateRecord(ctx context.Context, arg UpdateRecordParams) (Item, error) {
-	row := q.db.QueryRow(ctx, updateRecord, arg.Name, arg.ID, arg.ClerkUserID)
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
+	row := q.db.QueryRow(ctx, updateItem, arg.Name, arg.ID, arg.ClerkUserID)
 	var i Item
 	err := row.Scan(
 		&i.ID,

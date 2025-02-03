@@ -104,5 +104,23 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 
 // (PUT /items/{itemId})
 func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateItemRequestObject) (openapi.UpdateItemResponseObject, error) {
-	return openapi.UpdateItem200JSONResponse{}, nil
+	user, err := v.getUser(ctx)
+	if err != nil {
+		return openapi.UpdateItem4XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 401}, nil
+	}
+
+	item, err := v.queries.UpdateItem(ctx, sqlc.UpdateItemParams{
+		ID:          request.ItemId,
+		Name:        request.Body.Name,
+		ClerkUserID: user.ID,
+	})
+	if err != nil {
+		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+
+	return openapi.UpdateItem200JSONResponse{Id: item.ID, Name: item.Name}, nil
 }

@@ -22,7 +22,7 @@ WHERE clerk_user_id = $1
 AND deleted_at IS NULL
 ORDER BY created_at DESC;
 
--- name: UpdateRecord :one
+-- name: UpdateItem :one
 UPDATE items
 SET name = $1
 WHERE id = $2
