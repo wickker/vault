@@ -77,8 +77,6 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Auth())
 
-	//r.Use(f)
-
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
 	})
@@ -124,13 +122,13 @@ func loadEnv() config.EnvConfig {
 func getSwagger() *openapi3.T {
 	spec, err := os.ReadFile("openapi/openapi.yaml")
 	if err != nil {
-		log.Err(err).Msg("Unable to open and read openapi.yaml")
+		log.Err(err).Msg("Unable to open and read openapi yaml.")
 		return nil
 	}
 
 	swagger, err := openapi3.NewLoader().LoadFromData(spec)
 	if err != nil {
-		log.Err(err).Msg("Unable to load Swagger")
+		log.Err(err).Msg("Unable to load Swagger.")
 		return nil
 	}
 
