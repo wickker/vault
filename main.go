@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -39,9 +42,10 @@ func main() {
 
 	router := setupGin(envCfg)
 
+	protectedRoutes := router.Group("protected", ginmiddleware.OapiRequestValidator(getSwagger()))
 	vaultService := services.NewVaultService(queries)
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
-	openapi.RegisterHandlersWithOptions(router.Group("protected"), vaultHandler, openapi.GinServerOptions{
+	openapi.RegisterHandlersWithOptions(protectedRoutes, vaultHandler, openapi.GinServerOptions{
 		ErrorHandler: errorHandler,
 	})
 
@@ -72,6 +76,8 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r.Use(middleware.Cors(envCfg))
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Auth())
+
+	//r.Use(f)
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
@@ -113,4 +119,25 @@ func loadEnv() config.EnvConfig {
 		log.Err(err).Msg("Unable to parse environment variables to struct.")
 	}
 	return envCfg
+}
+
+func getSwagger() *openapi3.T {
+	spec, err := os.ReadFile("openapi/openapi.yaml")
+	if err != nil {
+		log.Err(err).Msg("Unable to open and read openapi.yaml")
+		return nil
+	}
+
+	swagger, err := openapi3.NewLoader().LoadFromData(spec)
+	if err != nil {
+		log.Err(err).Msg("Unable to load Swagger")
+		return nil
+	}
+
+	updatedPaths := &openapi3.Paths{}
+	for k, v := range swagger.Paths.Map() {
+		updatedPaths.Set(fmt.Sprintf("/protected%s", k), v)
+	}
+	swagger.Paths = updatedPaths
+	return swagger
 }

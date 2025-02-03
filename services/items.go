@@ -8,6 +8,13 @@ import (
 
 // (GET /items)
 func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+	//user, err := v.getUser(ctx)
+	//if err != nil {
+	//	return openapi.GetItems4XXJSONResponse{Body: openapi.Error{
+	//		Message: err.Error(),
+	//	}, StatusCode: 401}, nil
+	//}
+
 	return openapi.GetItems200JSONResponse{}, nil
 }
 
