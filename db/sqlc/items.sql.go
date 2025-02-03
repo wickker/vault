@@ -34,11 +34,12 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 	return i, err
 }
 
-const deleteItem = `-- name: DeleteItem :exec
+const deleteItem = `-- name: DeleteItem :one
 UPDATE items
 SET deleted_at = NOW()
 WHERE id = $1
 AND clerk_user_id = $2
+RETURNING id, name, clerk_user_id, created_at, updated_at, deleted_at
 `
 
 type DeleteItemParams struct {
@@ -46,9 +47,18 @@ type DeleteItemParams struct {
 	ClerkUserID string
 }
 
-func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
-	_, err := q.db.Exec(ctx, deleteItem, arg.ID, arg.ClerkUserID)
-	return err
+func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) (Item, error) {
+	row := q.db.QueryRow(ctx, deleteItem, arg.ID, arg.ClerkUserID)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClerkUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
 
 const getItem = `-- name: GetItem :one

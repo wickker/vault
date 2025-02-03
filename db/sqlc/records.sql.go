@@ -9,13 +9,37 @@ import (
 	"context"
 )
 
-const deleteRecords = `-- name: DeleteRecords :exec
+const deleteRecords = `-- name: DeleteRecords :many
 UPDATE records
 SET deleted_at = NOW()
 WHERE item_id = $1
+RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
 `
 
-func (q *Queries) DeleteRecords(ctx context.Context, itemID int32) error {
-	_, err := q.db.Exec(ctx, deleteRecords, itemID)
-	return err
+func (q *Queries) DeleteRecords(ctx context.Context, itemID int32) ([]Record, error) {
+	rows, err := q.db.Query(ctx, deleteRecords, itemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Record
+	for rows.Next() {
+		var i Record
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Value,
+			&i.ItemID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

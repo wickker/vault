@@ -78,21 +78,28 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 	}()
 	qtx := v.queries.WithTx(tx)
 
-	if err := qtx.DeleteItem(ctx, sqlc.DeleteItemParams{
+	item, err := qtx.DeleteItem(ctx, sqlc.DeleteItemParams{
 		ID:          request.ItemId,
 		ClerkUserID: user.ID,
-	}); err != nil {
+	})
+	if err != nil {
+		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+	if item.ID == 0 {
+		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
+			Message: "Item not found",
+		}, StatusCode: 500}, nil
+	}
+
+	// delete associated records
+	if _, err := qtx.DeleteRecords(ctx, request.ItemId); err != nil {
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
 	}
 
-	// delete associated records
-	if err := qtx.DeleteRecords(ctx, request.ItemId); err != nil {
-		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
-			Message: err.Error(),
-		}, StatusCode: 500}, nil
-	}
 	if err := tx.Commit(ctx); err != nil {
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
@@ -119,6 +126,11 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 	if err != nil {
 		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+	if item.ID == 0 {
+		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
+			Message: "Item not found",
 		}, StatusCode: 500}, nil
 	}
 
