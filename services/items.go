@@ -8,6 +8,7 @@ import (
 
 // (GET /items)
 func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+	logger := v.getLogger(ctx)
 	user, err := v.getUser(ctx)
 	if err != nil {
 		return openapi.GetItems4XXJSONResponse{Body: openapi.Error{
@@ -17,6 +18,7 @@ func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestOb
 
 	items, err := v.queries.ListItemsByUser(ctx, user.ID)
 	if err != nil {
+		logger.Err(err).Msgf("Unable to list items by user [UserID: %s].", user.ID)
 		return openapi.GetItems5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -35,6 +37,7 @@ func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestOb
 
 // (POST /items)
 func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateItemRequestObject) (openapi.CreateItemResponseObject, error) {
+	logger := v.getLogger(ctx)
 	user, err := v.getUser(ctx)
 	if err != nil {
 		return openapi.CreateItem4XXJSONResponse{Body: openapi.Error{
@@ -47,6 +50,7 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 		ClerkUserID: user.ID,
 	})
 	if err != nil {
+		logger.Err(err).Msgf("Unable to create item [Name: %s][ClerkUserID: %s].", request.Body.Name, user.ID)
 		return openapi.CreateItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -60,6 +64,7 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 
 // (DELETE /items/{itemId})
 func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteItemRequestObject) (openapi.DeleteItemResponseObject, error) {
+	logger := v.getLogger(ctx)
 	user, err := v.getUser(ctx)
 	if err != nil {
 		return openapi.DeleteItem4XXJSONResponse{Body: openapi.Error{
@@ -69,6 +74,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 
 	tx, err := v.dbPool.Begin(ctx)
 	if err != nil {
+		logger.Err(err).Msg("Unable to begin transaction.")
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -83,11 +89,13 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 		ClerkUserID: user.ID,
 	})
 	if err != nil {
+		logger.Err(err).Msgf("Unable to delete item [ID: %s][ClerkUserID: %s].", request.ItemId, user.ID)
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
 	}
 	if item.ID == 0 {
+		logger.Err(err).Msgf("Unable to find item to delete [ID: %s][ClerkUserID: %s].", request.ItemId, user.ID)
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: "Item not found",
 		}, StatusCode: 500}, nil
@@ -95,6 +103,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 
 	// delete associated records
 	if _, err := qtx.DeleteRecords(ctx, request.ItemId); err != nil {
+		logger.Err(err).Msgf("Unable to delete records [ItemID: %s].", request.ItemId)
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -111,6 +120,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 
 // (PUT /items/{itemId})
 func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateItemRequestObject) (openapi.UpdateItemResponseObject, error) {
+	logger := v.getLogger(ctx)
 	user, err := v.getUser(ctx)
 	if err != nil {
 		return openapi.UpdateItem4XXJSONResponse{Body: openapi.Error{
@@ -124,11 +134,13 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 		ClerkUserID: user.ID,
 	})
 	if err != nil {
+		logger.Err(err).Msgf("Unable to update item [ID: %s][Name: %s][ClerkUserID: %s]", request.ItemId, request.Body.Name, user.ID)
 		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
 	}
 	if item.ID == 0 {
+		logger.Err(err).Msgf("Unable to find item to update [ID: %s][Name: %s][ClerkUserID: %s]", request.ItemId, request.Body.Name, user.ID)
 		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
 			Message: "Item not found",
 		}, StatusCode: 500}, nil

@@ -35,9 +35,12 @@ func (v *VaultService) getLogger(c context.Context) zerolog.Logger {
 }
 
 func (v *VaultService) getUser(c context.Context) (*clerk.User, error) {
+	logger := v.getLogger(c)
 	user, ok := c.Value("user").(*clerk.User)
 	if !ok {
-		return nil, errors.New("failed to parse clerk user from context")
+		err := errors.New("failed to parse clerk user from context")
+		logger.Err(err).Msgf("Unable to parse clerk user from context [User: %+v].", user)
+		return nil, err
 	}
 	return user, nil
 }
