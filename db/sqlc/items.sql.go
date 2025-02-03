@@ -34,11 +34,47 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 	return i, err
 }
 
+const deleteItem = `-- name: DeleteItem :exec
+UPDATE items
+SET deleted_at = NOW()
+WHERE id = $1
+AND clerk_user_id = $2
+`
+
+type DeleteItemParams struct {
+	ID          int32
+	ClerkUserID string
+}
+
+func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) error {
+	_, err := q.db.Exec(ctx, deleteItem, arg.ID, arg.ClerkUserID)
+	return err
+}
+
+const getItem = `-- name: GetItem :one
+SELECT id, name
+FROM items
+WHERE id = $1
+AND deleted_at IS NULL
+`
+
+type GetItemRow struct {
+	ID   int32
+	Name string
+}
+
+func (q *Queries) GetItem(ctx context.Context, id int32) (GetItemRow, error) {
+	row := q.db.QueryRow(ctx, getItem, id)
+	var i GetItemRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const listItemsByUser = `-- name: ListItemsByUser :many
 SELECT id, name
 FROM items
 WHERE clerk_user_id = $1
-  AND deleted_at IS NULL
+AND deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
@@ -65,4 +101,32 @@ func (q *Queries) ListItemsByUser(ctx context.Context, clerkUserID string) ([]Li
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateRecord = `-- name: UpdateRecord :one
+UPDATE items
+SET name = $1
+WHERE id = $2
+AND clerk_user_id = $3
+RETURNING id, name, clerk_user_id, created_at, updated_at, deleted_at
+`
+
+type UpdateRecordParams struct {
+	Name        string
+	ID          int32
+	ClerkUserID string
+}
+
+func (q *Queries) UpdateRecord(ctx context.Context, arg UpdateRecordParams) (Item, error) {
+	row := q.db.QueryRow(ctx, updateRecord, arg.Name, arg.ID, arg.ClerkUserID)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClerkUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }

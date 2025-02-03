@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"vault/db/sqlc"
@@ -12,13 +13,15 @@ import (
 
 type VaultService struct {
 	queries *sqlc.Queries
+	dbPool  *pgxpool.Pool
 }
 
 var _ openapi.StrictServerInterface = (*VaultService)(nil)
 
-func NewVaultService(queries *sqlc.Queries) *VaultService {
+func NewVaultService(queries *sqlc.Queries, dbPool *pgxpool.Pool) *VaultService {
 	return &VaultService{
 		queries: queries,
+		dbPool:  dbPool,
 	}
 }
 
