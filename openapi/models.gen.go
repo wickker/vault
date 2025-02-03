@@ -14,7 +14,18 @@ type Item struct {
 	Name string `json:"name"`
 }
 
-// GetItemsParams defines parameters for GetItems.
-type GetItemsParams struct {
-	Id string `form:"id" json:"id"`
+// CreateItemJSONBody defines parameters for CreateItem.
+type CreateItemJSONBody struct {
+	Name string `json:"name"`
 }
+
+// UpdateItemJSONBody defines parameters for UpdateItem.
+type UpdateItemJSONBody struct {
+	Name string `json:"name"`
+}
+
+// CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
+type CreateItemJSONRequestBody CreateItemJSONBody
+
+// UpdateItemJSONRequestBody defines body for UpdateItem for application/json ContentType.
+type UpdateItemJSONRequestBody UpdateItemJSONBody
