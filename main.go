@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -16,6 +20,7 @@ import (
 	"syscall"
 	"time"
 	"vault/config"
+	"vault/db/sqlc"
 	"vault/middleware"
 	"vault/openapi"
 	"vault/services"
@@ -26,13 +31,21 @@ func main() {
 
 	envCfg := loadEnv()
 
+	pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to connect to database.")
+	}
+	defer pool.Close()
+	queries := sqlc.New(pool)
+
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
 	router := setupGin(envCfg)
 
-	vaultService := services.NewVaultService()
+	protectedRoutes := router.Group("protected", ginmiddleware.OapiRequestValidator(getSwagger()))
+	vaultService := services.NewVaultService(queries, pool)
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
-	openapi.RegisterHandlersWithOptions(router, vaultHandler, openapi.GinServerOptions{
+	openapi.RegisterHandlersWithOptions(protectedRoutes, vaultHandler, openapi.GinServerOptions{
 		ErrorHandler: errorHandler,
 	})
 
@@ -104,4 +117,25 @@ func loadEnv() config.EnvConfig {
 		log.Err(err).Msg("Unable to parse environment variables to struct.")
 	}
 	return envCfg
+}
+
+func getSwagger() *openapi3.T {
+	spec, err := os.ReadFile("openapi/openapi.yaml")
+	if err != nil {
+		log.Err(err).Msg("Unable to open and read openapi yaml.")
+		return nil
+	}
+
+	swagger, err := openapi3.NewLoader().LoadFromData(spec)
+	if err != nil {
+		log.Err(err).Msg("Unable to load Swagger.")
+		return nil
+	}
+
+	updatedPaths := &openapi3.Paths{}
+	for k, v := range swagger.Paths.Map() {
+		updatedPaths.Set(fmt.Sprintf("/protected%s", k), v)
+	}
+	swagger.Paths = updatedPaths
+	return swagger
 }

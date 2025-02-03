@@ -4,16 +4,9 @@ info:
   version: 1.0.0
 
 paths:
-  # alphabetical
   /items:
     get:
       operationId: GetItems
-      parameters:
-        - name: id
-          in: query
-          schema:
-            type: string
-          required: true
       responses:
         200:
           description: All items belonging to a user
@@ -35,10 +28,108 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    post:
+      operationId: CreateItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+      responses:
+        201:
+          description: Newly created item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /items/{itemId}:
+    delete:
+      operationId: DeleteItem
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        204:
+          description: Deleted item
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: UpdateItem
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+      responses:
+        200:
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
-    # alphabetical
     Error:
       type: object
       required:
@@ -55,6 +146,7 @@ components:
       properties:
         id:
           type: integer
+          format: int32
         name:
           type: string
 

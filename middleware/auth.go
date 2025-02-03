@@ -12,7 +12,7 @@ import (
 
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path == "/" {
+		if !strings.Contains(c.Request.URL.Path, "protected") {
 			return
 		}
 
