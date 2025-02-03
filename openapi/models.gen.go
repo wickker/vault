@@ -10,7 +10,7 @@ type Error struct {
 
 // Item defines model for Item.
 type Item struct {
-	Id   int    `json:"id"`
+	Id   int32  `json:"id"`
 	Name string `json:"name"`
 }
 

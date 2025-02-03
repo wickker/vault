@@ -70,6 +70,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int32
       responses:
         204:
           description: Deleted item
@@ -93,6 +94,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int32
       requestBody:
         required: true
         content:
@@ -142,6 +144,7 @@ components:
       properties:
         id:
           type: integer
+          format: int32
         name:
           type: string
 

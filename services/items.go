@@ -2,29 +2,38 @@ package services
 
 import (
 	"context"
+	"vault/db/sqlc"
 	"vault/openapi"
 )
 
 // (GET /items)
-func (v *VaultService) GetItems(c context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
-	logger := v.getLogger(c)
-	logger.Info().Msg("Test")
-
-	return openapi.GetItems200JSONResponse{
-		{
-			Id:   1,
-			Name: "Hello",
-		},
-		{
-			Id:   2,
-			Name: "World",
-		},
-	}, nil
+func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+	return openapi.GetItems200JSONResponse{}, nil
 }
 
 // (POST /items)
 func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateItemRequestObject) (openapi.CreateItemResponseObject, error) {
-	return openapi.CreateItem201JSONResponse{}, nil
+	user, err := v.getUser(ctx)
+	if err != nil {
+		return openapi.CreateItem4XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 401}, nil
+	}
+
+	item, err := v.queries.CreateItem(ctx, sqlc.CreateItemParams{
+		Name:        request.Body.Name,
+		ClerkUserID: user.ID,
+	})
+	if err != nil {
+		return openapi.CreateItem5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+
+	return openapi.CreateItem201JSONResponse{
+		Name: item.Name,
+		Id:   item.ID,
+	}, nil
 }
 
 // (DELETE /items/{itemId})

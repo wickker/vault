@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"errors"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"vault/db/sqlc"
@@ -27,4 +29,12 @@ func (v *VaultService) getLogger(c context.Context) zerolog.Logger {
 		return log.Logger
 	}
 	return logger
+}
+
+func (v *VaultService) getUser(c context.Context) (*clerk.User, error) {
+	user, ok := c.Value("user").(*clerk.User)
+	if !ok {
+		return nil, errors.New("failed to parse clerk user from context")
+	}
+	return user, nil
 }

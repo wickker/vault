@@ -31,10 +31,10 @@ type ServerInterface interface {
 	CreateItem(c *gin.Context)
 
 	// (DELETE /items/{itemId})
-	DeleteItem(c *gin.Context, itemId int)
+	DeleteItem(c *gin.Context, itemId int32)
 
 	// (PUT /items/{itemId})
-	UpdateItem(c *gin.Context, itemId int)
+	UpdateItem(c *gin.Context, itemId int32)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -78,7 +78,7 @@ func (siw *ServerInterfaceWrapper) DeleteItem(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "itemId" -------------
-	var itemId int
+	var itemId int32
 
 	err = runtime.BindStyledParameterWithOptions("simple", "itemId", c.Param("itemId"), &itemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -102,7 +102,7 @@ func (siw *ServerInterfaceWrapper) UpdateItem(c *gin.Context) {
 	var err error
 
 	// ------------- Path parameter "itemId" -------------
-	var itemId int
+	var itemId int32
 
 	err = runtime.BindStyledParameterWithOptions("simple", "itemId", c.Param("itemId"), &itemId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
@@ -235,7 +235,7 @@ func (response CreateItem5XXJSONResponse) VisitCreateItemResponse(w http.Respons
 }
 
 type DeleteItemRequestObject struct {
-	ItemId int `json:"itemId"`
+	ItemId int32 `json:"itemId"`
 }
 
 type DeleteItemResponseObject interface {
@@ -275,7 +275,7 @@ func (response DeleteItem5XXJSONResponse) VisitDeleteItemResponse(w http.Respons
 }
 
 type UpdateItemRequestObject struct {
-	ItemId int `json:"itemId"`
+	ItemId int32 `json:"itemId"`
 	Body   *UpdateItemJSONRequestBody
 }
 
@@ -403,7 +403,7 @@ func (sh *strictHandler) CreateItem(ctx *gin.Context) {
 }
 
 // DeleteItem operation middleware
-func (sh *strictHandler) DeleteItem(ctx *gin.Context, itemId int) {
+func (sh *strictHandler) DeleteItem(ctx *gin.Context, itemId int32) {
 	var request DeleteItemRequestObject
 
 	request.ItemId = itemId
@@ -430,7 +430,7 @@ func (sh *strictHandler) DeleteItem(ctx *gin.Context, itemId int) {
 }
 
 // UpdateItem operation middleware
-func (sh *strictHandler) UpdateItem(ctx *gin.Context, itemId int) {
+func (sh *strictHandler) UpdateItem(ctx *gin.Context, itemId int32) {
 	var request UpdateItemRequestObject
 
 	request.ItemId = itemId
@@ -467,14 +467,15 @@ func (sh *strictHandler) UpdateItem(ctx *gin.Context, itemId int) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RUTWvcMBD9K2bao1g77faiW78oe+mtJRByUKyJoyBL6mjcsiz670WSN9nGS0igDTQ5",
-	"abDGM2/ee5od9H4M3qHjCHIHsb/CUZXwM5GnHATyAYkNls8jxqgGzCFvA4KEyGTcACkJIPwxGUIN8uwm",
-	"8VzsE/3FNfYMScCGcVyWNvqgqnGMA1LOdmp8QD+jYU5ddsy5xl36UsWwzXff1WQZBPxEisY7kHCy6lZd",
-	"bugDOhUMSHi76lZrEBAUXxWMrWEcSzQg5yMPoNh4t9Eg4QvypiRkbDF4F+tob7ouH713jK78p0Kwpi9/",
-	"ttcx99+zX6jYd3lNeAkSXrW3OrWzSG1hMd0Mq4jUts6qMfZkAte53lvblILNBVrvBuOGhn2jmilWgten",
-	"p49Cdx+oapsjKOYLAe+esFu+CD4eUeojoWIsFFYfYeQPXm8fBe1P/z7Mp/dY9DaNacK08NDJX+OtWmdJ",
-	"21f8ZbdNX7jRxTTP3R9JzG+63eVjo1OuqdEi49I1n8r32TVBkRqRkSLIsx2YXDcviv0eklArwl1lxQH6",
-	"u+sunS9kX1dEh/ArjpehkIAwHXnA34JWTyHFf7EZun++GSrdL2QnpPQ7AAD//6oULbgZCQAA",
+	"H4sIAAAAAAAC/+RUS2vcMBD+K2bao1g7yfaiW1+UvfTWEgg5KNaso2BL6mjcsiz670WSvUnrJU2gD5pc",
+	"rMGaxzfffJo9tG7wzqLlAHIPob3GQWXzPZGjZHhyHokN5t8DhqA6TCbvPIKEwGRsBzEKIPwyGkIN8uLg",
+	"eClmR3d1gy1DFLBhHJapjU7fraNBMUgwls9O4RBtLGOHlMKtGh4AwGiYXJcQkq+xW5ezGO7T3Wc19gwC",
+	"viIF4yxIOFk1qyYVdB6t8gYknK2a1RoEeMXXGXRtGIdsdcjpSB0pNs5uNEj4gLzJDglb8M6G0utp06Sj",
+	"dZbR5jjlfW/aHFnfhFR/HkfmZq7yknALEl7Ut4Orp6nVmdZ4aFYRqV3pVWNoyXgufb3u+yonrK6wd7Yz",
+	"tqvYVaoaQyF4fX7+KHT3gSo6OoJiuhDw6i9WSxfehSOTekuoGDOFRUcY+I3Tu0dB+1HQD9PpPRK9dWMa",
+	"MS40dPLbeCvSWdL2Eb/1u6rN3OgsmqeujyimN13v07HRMeXU2CPjUjXv8v9JNV6RGpCRAsiLPZiUNy2K",
+	"eQ9JKBnh58mKO+h/uf/i5UIH6wLxbj8F2PMYmQA/HnnRn7xW/2Q2/8XuaP747ij8P5OtEeP3AAAA///S",
+	"4n+BTAkAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
