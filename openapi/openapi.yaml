@@ -143,11 +143,13 @@ components:
       required:
         - id
         - name
+        - createdAt
       properties:
         id:
           type: integer
           format: int32
         name:
           type: string
-
+        createdAt:
+          type: string
 

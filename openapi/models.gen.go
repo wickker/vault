@@ -10,8 +10,9 @@ type Error struct {
 
 // Item defines model for Item.
 type Item struct {
-	Id   int32  `json:"id"`
-	Name string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+	Id        int32  `json:"id"`
+	Name      string `json:"name"`
 }
 
 // CreateItemJSONBody defines parameters for CreateItem.

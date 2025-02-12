@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createItem = `-- name: CreateItem :one
@@ -81,7 +83,7 @@ func (q *Queries) GetItem(ctx context.Context, id int32) (GetItemRow, error) {
 }
 
 const listItemsByUser = `-- name: ListItemsByUser :many
-SELECT id, name
+SELECT id, name, created_at
 FROM items
 WHERE clerk_user_id = $1
 AND deleted_at IS NULL
@@ -89,8 +91,9 @@ ORDER BY created_at DESC
 `
 
 type ListItemsByUserRow struct {
-	ID   int32
-	Name string
+	ID        int32
+	Name      string
+	CreatedAt pgtype.Timestamp
 }
 
 func (q *Queries) ListItemsByUser(ctx context.Context, clerkUserID string) ([]ListItemsByUserRow, error) {
@@ -102,7 +105,7 @@ func (q *Queries) ListItemsByUser(ctx context.Context, clerkUserID string) ([]Li
 	var items []ListItemsByUserRow
 	for rows.Next() {
 		var i ListItemsByUserRow
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

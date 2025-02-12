@@ -17,7 +17,7 @@ WHERE id = $1
 AND deleted_at IS NULL;
 
 -- name: ListItemsByUser :many
-SELECT id, name
+SELECT id, name, created_at
 FROM items
 WHERE clerk_user_id = $1
 AND deleted_at IS NULL

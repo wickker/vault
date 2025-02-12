@@ -27,8 +27,9 @@ func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestOb
 	result := openapi.GetItems200JSONResponse{}
 	for _, item := range items {
 		result = append(result, openapi.Item{
-			Id:   item.ID,
-			Name: item.Name,
+			Id:        item.ID,
+			Name:      item.Name,
+			CreatedAt: item.CreatedAt.Time.String(),
 		})
 	}
 
@@ -57,8 +58,9 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 	}
 
 	return openapi.CreateItem201JSONResponse{
-		Name: item.Name,
-		Id:   item.ID,
+		Name:      item.Name,
+		Id:        item.ID,
+		CreatedAt: item.CreatedAt.Time.String(),
 	}, nil
 }
 
@@ -147,5 +149,5 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 		}, StatusCode: 500}, nil
 	}
 
-	return openapi.UpdateItem200JSONResponse{Id: item.ID, Name: item.Name}, nil
+	return openapi.UpdateItem200JSONResponse{Id: item.ID, Name: item.Name, CreatedAt: item.CreatedAt.Time.String()}, nil
 }
