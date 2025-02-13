@@ -15,6 +15,13 @@ type Item struct {
 	Name      string `json:"name"`
 }
 
+// Record defines model for Record.
+type Record struct {
+	Id    int32  `json:"id"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // CreateItemJSONBody defines parameters for CreateItem.
 type CreateItemJSONBody struct {
 	Name string `json:"name"`
@@ -25,8 +32,31 @@ type UpdateItemJSONBody struct {
 	Name string `json:"name"`
 }
 
+// GetRecordsByItemParams defines parameters for GetRecordsByItem.
+type GetRecordsByItemParams struct {
+	ItemId int32 `form:"itemId" json:"itemId"`
+}
+
+// CreateRecordJSONBody defines parameters for CreateRecord.
+type CreateRecordJSONBody struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// UpdateRecordJSONBody defines parameters for UpdateRecord.
+type UpdateRecordJSONBody struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody CreateItemJSONBody
 
 // UpdateItemJSONRequestBody defines body for UpdateItem for application/json ContentType.
 type UpdateItemJSONRequestBody UpdateItemJSONBody
+
+// CreateRecordJSONRequestBody defines body for CreateRecord for application/json ContentType.
+type CreateRecordJSONRequestBody CreateRecordJSONBody
+
+// UpdateRecordJSONRequestBody defines body for UpdateRecord for application/json ContentType.
+type UpdateRecordJSONRequestBody UpdateRecordJSONBody
