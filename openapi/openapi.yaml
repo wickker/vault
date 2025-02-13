@@ -145,6 +145,10 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - id
+                  - name
+                  - records
                 properties:
                   id:
                     type: integer
@@ -182,9 +186,13 @@ paths:
                 value:
                   type: string
                   minLength: 1
+                item_id:
+                  type: integer
+                  format: int32
               required:
                 - name
                 - value
+                - item_id
       responses:
         201:
           description: Newly created record

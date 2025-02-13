@@ -39,8 +39,9 @@ type GetRecordsByItemParams struct {
 
 // CreateRecordJSONBody defines parameters for CreateRecord.
 type CreateRecordJSONBody struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	ItemId int32  `json:"item_id"`
+	Name   string `json:"name"`
+	Value  string `json:"value"`
 }
 
 // UpdateRecordJSONBody defines parameters for UpdateRecord.

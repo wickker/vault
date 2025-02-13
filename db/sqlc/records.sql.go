@@ -10,18 +10,19 @@ import (
 )
 
 const createRecord = `-- name: CreateRecord :one
-INSERT INTO records (name, value)
-VALUES ($1, $2)
+INSERT INTO records (name, value, item_id)
+VALUES ($1, $2, $3)
 RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
 `
 
 type CreateRecordParams struct {
-	Name  string
-	Value string
+	Name   string
+	Value  string
+	ItemID int32
 }
 
 func (q *Queries) CreateRecord(ctx context.Context, arg CreateRecordParams) (Record, error) {
-	row := q.db.QueryRow(ctx, createRecord, arg.Name, arg.Value)
+	row := q.db.QueryRow(ctx, createRecord, arg.Name, arg.Value, arg.ItemID)
 	var i Record
 	err := row.Scan(
 		&i.ID,
@@ -90,6 +91,21 @@ func (q *Queries) DeleteRecords(ctx context.Context, itemID int32) ([]Record, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRecordUserID = `-- name: GetRecordUserID :one
+SELECT items.clerk_user_id
+FROM records
+INNER JOIN items on items.id = records.item_id
+WHERE records.id = $1
+AND records.deleted_at IS NULL
+`
+
+func (q *Queries) GetRecordUserID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, getRecordUserID, id)
+	var clerk_user_id string
+	err := row.Scan(&clerk_user_id)
+	return clerk_user_id, err
 }
 
 const listRecordsByItem = `-- name: ListRecordsByItem :many
