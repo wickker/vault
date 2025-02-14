@@ -17,10 +17,23 @@ func (v *VaultService) GetRecordsByItem(ctx context.Context, request openapi.Get
 		}, StatusCode: 401}, nil
 	}
 
-	recordsByItem, err := v.queries.ListRecordsByItem(ctx, sqlc.ListRecordsByItemParams{
-		ID:          request.Params.ItemId,
-		ClerkUserID: user.ID,
-	})
+	// check that item belongs to user
+	item, err := v.queries.GetItem(ctx, request.Params.ItemId)
+	if err != nil {
+		logger.Err(err).Msgf("Unable to get item [ItemID: %v].", request.Params.ItemId)
+		return openapi.GetRecordsByItem5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+	if item.ClerkUserID != user.ID {
+		err = fmt.Errorf("requested item does not belong to user")
+		logger.Err(err).Msgf("Unable to match user IDs [itemUserID: %s][currentUserID: %s][ItemID: %v].", item.ClerkUserID, user.ID, request.Params.ItemId)
+		return openapi.GetRecordsByItem5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+
+	recordsByItem, err := v.queries.ListRecordsByItemId(ctx, request.Params.ItemId)
 	if err != nil {
 		logger.Err(err).Msgf("Unable to list records by item [UserID: %s][ItemID: %v].", user.ID, request.Params.ItemId)
 		return openapi.GetRecordsByItem5XXJSONResponse{Body: openapi.Error{
@@ -31,20 +44,14 @@ func (v *VaultService) GetRecordsByItem(ctx context.Context, request openapi.Get
 	records := make([]openapi.Record, len(recordsByItem))
 	for i, r := range recordsByItem {
 		records[i] = openapi.Record{
-			Id:    r.RecordID,
-			Name:  r.RecordName,
-			Value: r.RecordValue,
+			Id:    r.ID,
+			Name:  r.Name,
+			Value: r.Value,
 		}
 	}
-	var id int32
-	var name string
-	if len(records) > 0 {
-		id = records[0].Id
-		name = records[0].Name
-	}
 	return openapi.GetRecordsByItem200JSONResponse{
-		Id:      id,
-		Name:    name,
+		Id:      item.ID,
+		Name:    item.Name,
 		Records: records,
 	}, nil
 }
@@ -69,7 +76,7 @@ func (v *VaultService) CreateRecord(ctx context.Context, request openapi.CreateR
 	}
 	if item.ClerkUserID != user.ID {
 		err = fmt.Errorf("requested item does not belong to user")
-		logger.Err(err).Msgf("Unable to match user IDs [itemUserID: %s][currentUserID: %s].", item.ClerkUserID, user.ID)
+		logger.Err(err).Msgf("Unable to match user IDs [itemUserID: %s][currentUserID: %s][ItemID: %v].", item.ClerkUserID, user.ID, request.Body.ItemId)
 		return openapi.CreateRecord5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil

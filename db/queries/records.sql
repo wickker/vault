@@ -4,14 +4,11 @@ SET deleted_at = NOW()
 WHERE item_id = $1
 RETURNING *;
 
--- name: ListRecordsByItem :many
-SELECT items.id, items.name, records.id AS record_id, records.name AS record_name, records.value AS record_value
-FROM items
-INNER JOIN records ON items.id = records.item_id
-where records.deleted_at IS NULL
-AND items.deleted_at IS NULL
-AND items.id = $1
-AND items.clerk_user_id = $2;
+-- name: ListRecordsByItemId :many
+SELECT id, name, value
+FROM records
+where deleted_at IS NULL
+AND item_id = $1;
 
 -- name: CreateRecord :one
 INSERT INTO records (name, value, item_id)

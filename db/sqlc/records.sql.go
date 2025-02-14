@@ -108,45 +108,29 @@ func (q *Queries) GetRecordUserID(ctx context.Context, id int32) (string, error)
 	return clerk_user_id, err
 }
 
-const listRecordsByItem = `-- name: ListRecordsByItem :many
-SELECT items.id, items.name, records.id AS record_id, records.name AS record_name, records.value AS record_value
-FROM items
-INNER JOIN records ON items.id = records.item_id
-where records.deleted_at IS NULL
-AND items.deleted_at IS NULL
-AND items.id = $1
-AND items.clerk_user_id = $2
+const listRecordsByItemId = `-- name: ListRecordsByItemId :many
+SELECT id, name, value
+FROM records
+where deleted_at IS NULL
+AND item_id = $1
 `
 
-type ListRecordsByItemParams struct {
-	ID          int32
-	ClerkUserID string
+type ListRecordsByItemIdRow struct {
+	ID    int32
+	Name  string
+	Value string
 }
 
-type ListRecordsByItemRow struct {
-	ID          int32
-	Name        string
-	RecordID    int32
-	RecordName  string
-	RecordValue string
-}
-
-func (q *Queries) ListRecordsByItem(ctx context.Context, arg ListRecordsByItemParams) ([]ListRecordsByItemRow, error) {
-	rows, err := q.db.Query(ctx, listRecordsByItem, arg.ID, arg.ClerkUserID)
+func (q *Queries) ListRecordsByItemId(ctx context.Context, itemID int32) ([]ListRecordsByItemIdRow, error) {
+	rows, err := q.db.Query(ctx, listRecordsByItemId, itemID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListRecordsByItemRow
+	var items []ListRecordsByItemIdRow
 	for rows.Next() {
-		var i ListRecordsByItemRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.RecordID,
-			&i.RecordName,
-			&i.RecordValue,
-		); err != nil {
+		var i ListRecordsByItemIdRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Value); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
