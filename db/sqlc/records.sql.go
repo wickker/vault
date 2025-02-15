@@ -96,7 +96,7 @@ func (q *Queries) DeleteRecords(ctx context.Context, itemID int32) ([]Record, er
 const getRecordUserID = `-- name: GetRecordUserID :one
 SELECT items.clerk_user_id
 FROM records
-INNER JOIN items on items.id = records.item_id
+INNER JOIN items ON items.id = records.item_id
 WHERE records.id = $1
 AND records.deleted_at IS NULL
 `
@@ -111,8 +111,9 @@ func (q *Queries) GetRecordUserID(ctx context.Context, id int32) (string, error)
 const listRecordsByItemId = `-- name: ListRecordsByItemId :many
 SELECT id, name, value
 FROM records
-where deleted_at IS NULL
+WHERE deleted_at IS NULL
 AND item_id = $1
+ORDER BY name
 `
 
 type ListRecordsByItemIdRow struct {
@@ -143,8 +144,7 @@ func (q *Queries) ListRecordsByItemId(ctx context.Context, itemID int32) ([]List
 
 const updateRecord = `-- name: UpdateRecord :one
 UPDATE records
-SET name = $1,
-value = $2
+SET name = $1, value = $2
 WHERE id = $3
 RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
 `

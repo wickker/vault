@@ -7,8 +7,9 @@ RETURNING *;
 -- name: ListRecordsByItemId :many
 SELECT id, name, value
 FROM records
-where deleted_at IS NULL
-AND item_id = $1;
+WHERE deleted_at IS NULL
+AND item_id = $1
+ORDER BY name;
 
 -- name: CreateRecord :one
 INSERT INTO records (name, value, item_id)
@@ -17,8 +18,7 @@ RETURNING *;
 
 -- name: UpdateRecord :one
 UPDATE records
-SET name = $1,
-value = $2
+SET name = $1, value = $2
 WHERE id = $3
 RETURNING *;
 
@@ -31,6 +31,6 @@ RETURNING *;
 -- name: GetRecordUserID :one
 SELECT items.clerk_user_id
 FROM records
-INNER JOIN items on items.id = records.item_id
+INNER JOIN items ON items.id = records.item_id
 WHERE records.id = $1
 AND records.deleted_at IS NULL;
