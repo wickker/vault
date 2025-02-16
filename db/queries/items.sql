@@ -11,7 +11,7 @@ AND clerk_user_id = $2
 RETURNING *;
 
 -- name: GetItem :one
-SELECT id, name
+SELECT id, name, clerk_user_id
 FROM items
 WHERE id = $1
 AND deleted_at IS NULL;

@@ -35,6 +35,18 @@ type ServerInterface interface {
 
 	// (PUT /items/{itemId})
 	UpdateItem(c *gin.Context, itemId int32)
+
+	// (GET /records)
+	GetRecordsByItem(c *gin.Context, params GetRecordsByItemParams)
+
+	// (POST /records)
+	CreateRecord(c *gin.Context)
+
+	// (DELETE /records/{recordId})
+	DeleteRecord(c *gin.Context, recordId int32)
+
+	// (PUT /records/{recordId})
+	UpdateRecord(c *gin.Context, recordId int32)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -120,6 +132,100 @@ func (siw *ServerInterfaceWrapper) UpdateItem(c *gin.Context) {
 	siw.Handler.UpdateItem(c, itemId)
 }
 
+// GetRecordsByItem operation middleware
+func (siw *ServerInterfaceWrapper) GetRecordsByItem(c *gin.Context) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRecordsByItemParams
+
+	// ------------- Required query parameter "itemId" -------------
+
+	if paramValue := c.Query("itemId"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument itemId is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "itemId", c.Request.URL.Query(), &params.ItemId)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter itemId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRecordsByItem(c, params)
+}
+
+// CreateRecord operation middleware
+func (siw *ServerInterfaceWrapper) CreateRecord(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateRecord(c)
+}
+
+// DeleteRecord operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRecord(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "recordId" -------------
+	var recordId int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recordId", c.Param("recordId"), &recordId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recordId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteRecord(c, recordId)
+}
+
+// UpdateRecord operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRecord(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "recordId" -------------
+	var recordId int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recordId", c.Param("recordId"), &recordId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recordId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateRecord(c, recordId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -151,6 +257,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/items", wrapper.CreateItem)
 	router.DELETE(options.BaseURL+"/items/:itemId", wrapper.DeleteItem)
 	router.PUT(options.BaseURL+"/items/:itemId", wrapper.UpdateItem)
+	router.GET(options.BaseURL+"/records", wrapper.GetRecordsByItem)
+	router.POST(options.BaseURL+"/records", wrapper.CreateRecord)
+	router.DELETE(options.BaseURL+"/records/:recordId", wrapper.DeleteRecord)
+	router.PUT(options.BaseURL+"/records/:recordId", wrapper.UpdateRecord)
 }
 
 type GetItemsRequestObject struct {
@@ -316,6 +426,174 @@ func (response UpdateItem5XXJSONResponse) VisitUpdateItemResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type GetRecordsByItemRequestObject struct {
+	Params GetRecordsByItemParams
+}
+
+type GetRecordsByItemResponseObject interface {
+	VisitGetRecordsByItemResponse(w http.ResponseWriter) error
+}
+
+type GetRecordsByItem200JSONResponse struct {
+	Id      int32    `json:"id"`
+	Name    string   `json:"name"`
+	Records []Record `json:"records"`
+}
+
+func (response GetRecordsByItem200JSONResponse) VisitGetRecordsByItemResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRecordsByItem4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetRecordsByItem4XXJSONResponse) VisitGetRecordsByItemResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetRecordsByItem5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetRecordsByItem5XXJSONResponse) VisitGetRecordsByItemResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRecordRequestObject struct {
+	Body *CreateRecordJSONRequestBody
+}
+
+type CreateRecordResponseObject interface {
+	VisitCreateRecordResponse(w http.ResponseWriter) error
+}
+
+type CreateRecord201JSONResponse Record
+
+func (response CreateRecord201JSONResponse) VisitCreateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateRecord4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateRecord4XXJSONResponse) VisitCreateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateRecord5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateRecord5XXJSONResponse) VisitCreateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRecordRequestObject struct {
+	RecordId int32 `json:"recordId"`
+}
+
+type DeleteRecordResponseObject interface {
+	VisitDeleteRecordResponse(w http.ResponseWriter) error
+}
+
+type DeleteRecord204Response struct {
+}
+
+func (response DeleteRecord204Response) VisitDeleteRecordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRecord4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DeleteRecord4XXJSONResponse) VisitDeleteRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteRecord5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DeleteRecord5XXJSONResponse) VisitDeleteRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateRecordRequestObject struct {
+	RecordId int32 `json:"recordId"`
+	Body     *UpdateRecordJSONRequestBody
+}
+
+type UpdateRecordResponseObject interface {
+	VisitUpdateRecordResponse(w http.ResponseWriter) error
+}
+
+type UpdateRecord200JSONResponse Record
+
+func (response UpdateRecord200JSONResponse) VisitUpdateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateRecord4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateRecord4XXJSONResponse) VisitUpdateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateRecord5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateRecord5XXJSONResponse) VisitUpdateRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -330,6 +608,18 @@ type StrictServerInterface interface {
 
 	// (PUT /items/{itemId})
 	UpdateItem(ctx context.Context, request UpdateItemRequestObject) (UpdateItemResponseObject, error)
+
+	// (GET /records)
+	GetRecordsByItem(ctx context.Context, request GetRecordsByItemRequestObject) (GetRecordsByItemResponseObject, error)
+
+	// (POST /records)
+	CreateRecord(ctx context.Context, request CreateRecordRequestObject) (CreateRecordResponseObject, error)
+
+	// (DELETE /records/{recordId})
+	DeleteRecord(ctx context.Context, request DeleteRecordRequestObject) (DeleteRecordResponseObject, error)
+
+	// (PUT /records/{recordId})
+	UpdateRecord(ctx context.Context, request UpdateRecordRequestObject) (UpdateRecordResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -464,18 +754,143 @@ func (sh *strictHandler) UpdateItem(ctx *gin.Context, itemId int32) {
 	}
 }
 
+// GetRecordsByItem operation middleware
+func (sh *strictHandler) GetRecordsByItem(ctx *gin.Context, params GetRecordsByItemParams) {
+	var request GetRecordsByItemRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRecordsByItem(ctx, request.(GetRecordsByItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRecordsByItem")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetRecordsByItemResponseObject); ok {
+		if err := validResponse.VisitGetRecordsByItemResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRecord operation middleware
+func (sh *strictHandler) CreateRecord(ctx *gin.Context) {
+	var request CreateRecordRequestObject
+
+	var body CreateRecordJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRecord(ctx, request.(CreateRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRecord")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(CreateRecordResponseObject); ok {
+		if err := validResponse.VisitCreateRecordResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRecord operation middleware
+func (sh *strictHandler) DeleteRecord(ctx *gin.Context, recordId int32) {
+	var request DeleteRecordRequestObject
+
+	request.RecordId = recordId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRecord(ctx, request.(DeleteRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRecord")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(DeleteRecordResponseObject); ok {
+		if err := validResponse.VisitDeleteRecordResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateRecord operation middleware
+func (sh *strictHandler) UpdateRecord(ctx *gin.Context, recordId int32) {
+	var request UpdateRecordRequestObject
+
+	request.RecordId = recordId
+
+	var body UpdateRecordJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateRecord(ctx, request.(UpdateRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateRecord")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(UpdateRecordResponseObject); ok {
+		if err := validResponse.VisitUpdateRecordResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RUTWvcMBD9K2bao1g7yfaiW/pBWSi9tQRCDoo161WwJXU027Is+u9FknezrU3TQD9o",
-	"c/Jgjd68mfc0e2jd4J1FywHkHkK7wUHl8A2RoxR4ch6JDebfA4agOkwh7zyChMBkbAcxCiD8tDWEGuT1",
-	"MfFGHBLd7R22DFHAinGYQreEilFf8gy4AKPT77WjQTFIMJYvzuGIbSxjh5QSrRp+gp7RMKaKk8JTsume",
-	"sWuXEQ336eyj2vYMAj4jBeMsSDhbNIsmFXcerfIGJFwsmsUSBHjFm9xebRiHHHWYW0y9KzbOrjRIeIu8",
-	"ygmJZ/DOhjKV86bJw3GW0eZ7yvvetPlmfRdS/YNwKTpWeU64BgnP6nuJ61HfOgsQj80qIrUrvWoMLRnP",
-	"pa/Lvq8yYHWLvbOdsV3FrlLVNpRhL6+uHsXuR6SK42ZYjAcCXvzBaunAuzCj1KtslzzC4ikM/NLp3aOo",
-	"fWv9g2cHY9+h7XgD8kw84OB8Z96w92lMW4wTR539sikWI02H+B6/9LtqfFjZQv+7W6IYX3i9T5+VjglT",
-	"Y4+MUw+9zv9HD3lFakBGCiCv92ASblobhw0loSDC98qKE/YPbsZ4M/HBslA87acQexqSCfDbmff9wWv1",
-	"V7T5BzdJ89s3SVHjieyQGL8GAAD///xs8TeSCQAA",
+	"H4sIAAAAAAAC/+RXT2vcPhD9Ksv8fkexdv704lvSlrJQeii0BEIoij1xFGxJkcYtZvF3L5JsZxs73ixJ",
+	"dml9WmHNjJ5mnh5v15CqUiuJkiwka7DpLZbcLz8ao4xbaKM0GhLoP5doLc/RLanWCAlYMkLm0DQMDN5X",
+	"wmAGyWUfeMW6QHV9hylBw2BFWA5LpwY5YXZGI8UZiMx9vlGm5AQJCEknx9DXFpIwR+MCJS+fAU9k0Iay",
+	"jYPHwH7FVJlsCPelgBj85EW1I9SQMoTpcoS8Ub6aoMLtfedVQS4HjRVKQgJHy3gZu5OVRsm1gAROlvHy",
+	"FBhoTrf+WpEgLP0qRz8Jd2dOQslVBgl8Qlr5AIfRaiVt6MZxHPsZKkkofR7XuhCpz4zurDu/45fvXnfK",
+	"/wZvIIH/ogcmRi0NI8+Tpr8sN4bX4a4Z2tQITeFeZ0Wx8AUX11gomQuZL0gt+KKyYQSnFxc7oZsCFR7G",
+	"CIp2g8G7PZ7mNrSyI5N671ntWxj4hJbOVVbvBO1PyndMLoX8jDKnW0iO2Bb2+pxxwj6EkamwGTDq6NW6",
+	"GIg0bOIX/FXUi/b9ewr962xpWPvCo7X7WWWNq5lhgYRDDn3w31sOaW54iYTGQnK5BuHqOtno1CmBUBEe",
+	"T5ZtoN+ql83VgAenAeLmfQKweYyMga5G3vc3nfGDzOYvVJL4zZUkTGM+GmK8K5r0CcE42fN6gqP3FZr6",
+	"zQUkfgFTX27zNlr1LNfTGs6h73naFnZHjL+OoVlq4x/ZJTkXOZ3wS23zX0vnXEN/7EyhSVXc+N+ws3p2",
+	"uawHdmhn1pF9mzcz/aOYibJG67B4lkPrWbvdB3RV9+nS5jG8SZ92oAntzau9hiod2ts9rUWdu5uJCjXN",
+	"7wAAAP//q8k03xkUAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

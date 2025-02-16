@@ -9,6 +9,55 @@ import (
 	"context"
 )
 
+const createRecord = `-- name: CreateRecord :one
+INSERT INTO records (name, value, item_id)
+VALUES ($1, $2, $3)
+RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
+`
+
+type CreateRecordParams struct {
+	Name   string
+	Value  string
+	ItemID int32
+}
+
+func (q *Queries) CreateRecord(ctx context.Context, arg CreateRecordParams) (Record, error) {
+	row := q.db.QueryRow(ctx, createRecord, arg.Name, arg.Value, arg.ItemID)
+	var i Record
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Value,
+		&i.ItemID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const deleteRecord = `-- name: DeleteRecord :one
+UPDATE records
+SET deleted_at = NOW()
+WHERE id = $1
+RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
+`
+
+func (q *Queries) DeleteRecord(ctx context.Context, id int32) (Record, error) {
+	row := q.db.QueryRow(ctx, deleteRecord, id)
+	var i Record
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Value,
+		&i.ItemID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const deleteRecords = `-- name: DeleteRecords :many
 UPDATE records
 SET deleted_at = NOW()
@@ -42,4 +91,81 @@ func (q *Queries) DeleteRecords(ctx context.Context, itemID int32) ([]Record, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRecordUserID = `-- name: GetRecordUserID :one
+SELECT items.clerk_user_id
+FROM records
+INNER JOIN items ON items.id = records.item_id
+WHERE records.id = $1
+AND records.deleted_at IS NULL
+`
+
+func (q *Queries) GetRecordUserID(ctx context.Context, id int32) (string, error) {
+	row := q.db.QueryRow(ctx, getRecordUserID, id)
+	var clerk_user_id string
+	err := row.Scan(&clerk_user_id)
+	return clerk_user_id, err
+}
+
+const listRecordsByItemId = `-- name: ListRecordsByItemId :many
+SELECT id, name, value
+FROM records
+WHERE deleted_at IS NULL
+AND item_id = $1
+ORDER BY name
+`
+
+type ListRecordsByItemIdRow struct {
+	ID    int32
+	Name  string
+	Value string
+}
+
+func (q *Queries) ListRecordsByItemId(ctx context.Context, itemID int32) ([]ListRecordsByItemIdRow, error) {
+	rows, err := q.db.Query(ctx, listRecordsByItemId, itemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecordsByItemIdRow
+	for rows.Next() {
+		var i ListRecordsByItemIdRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRecord = `-- name: UpdateRecord :one
+UPDATE records
+SET name = $1, value = $2
+WHERE id = $3
+RETURNING id, name, value, item_id, created_at, updated_at, deleted_at
+`
+
+type UpdateRecordParams struct {
+	Name  string
+	Value string
+	ID    int32
+}
+
+func (q *Queries) UpdateRecord(ctx context.Context, arg UpdateRecordParams) (Record, error) {
+	row := q.db.QueryRow(ctx, updateRecord, arg.Name, arg.Value, arg.ID)
+	var i Record
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Value,
+		&i.ItemID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }

@@ -64,21 +64,22 @@ func (q *Queries) DeleteItem(ctx context.Context, arg DeleteItemParams) (Item, e
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, name
+SELECT id, name, clerk_user_id
 FROM items
 WHERE id = $1
 AND deleted_at IS NULL
 `
 
 type GetItemRow struct {
-	ID   int32
-	Name string
+	ID          int32
+	Name        string
+	ClerkUserID string
 }
 
 func (q *Queries) GetItem(ctx context.Context, id int32) (GetItemRow, error) {
 	row := q.db.QueryRow(ctx, getItem, id)
 	var i GetItemRow
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.ClerkUserID)
 	return i, err
 }
 
