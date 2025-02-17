@@ -16,7 +16,10 @@ func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestOb
 		}, StatusCode: 401}, nil
 	}
 
-	items, err := v.queries.ListItemsByUser(ctx, user.ID)
+	items, err := v.queries.ListItemsByUser(ctx, sqlc.ListItemsByUserParams{
+		ClerkUserID: user.ID,
+		// TODO:
+	})
 	if err != nil {
 		logger.Err(err).Msgf("Unable to list items by user [UserID: %s].", user.ID)
 		return openapi.GetItems5XXJSONResponse{Body: openapi.Error{

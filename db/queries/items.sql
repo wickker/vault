@@ -20,8 +20,21 @@ AND deleted_at IS NULL;
 SELECT id, name, created_at
 FROM items
 WHERE clerk_user_id = $1
+AND (name ILIKE sqlc.narg('name') OR sqlc.narg('name') IS NULL)
 AND deleted_at IS NULL
-ORDER BY created_at DESC;
+ORDER BY
+CASE
+WHEN @order_by::text = 'name_desc' THEN name
+END DESC,
+CASE
+WHEN @order_by::text = 'created_at_desc' THEN created_at
+END DESC,
+CASE
+WHEN @order_by::text = 'name_asc' THEN name
+END ASC,
+CASE
+WHEN @order_by::text = 'created_at_asc' THEN created_at
+END ASC;
 
 -- name: UpdateItem :one
 UPDATE items
