@@ -1,19 +1,21 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
-	"strings"
 )
 
 type String struct {
-	String string
+	Pointer *string
+	Like    bool
 }
 
 func (s String) ToPgText() pgtype.Text {
-	str := strings.ReplaceAll(s.String, "%", "")
-	str = strings.TrimSpace(str)
-	if str != "" {
-		return pgtype.Text{String: s.String, Valid: true}
+	if s.Pointer != nil && *s.Pointer != "" {
+		if s.Like {
+			return pgtype.Text{String: fmt.Sprintf("%%%s%%", *s.Pointer), Valid: true}
+		}
+		return pgtype.Text{String: *s.Pointer, Valid: true}
 	}
 	return pgtype.Text{}
 }
