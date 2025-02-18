@@ -7,7 +7,7 @@ type String struct {
 }
 
 func (s String) PointerToPgText() pgtype.Text {
-	if s.StringPointer != nil {
+	if s.StringPointer != nil && *s.StringPointer != "" {
 		return pgtype.Text{String: *s.StringPointer, Valid: true}
 	}
 	return pgtype.Text{}
