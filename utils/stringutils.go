@@ -1,14 +1,19 @@
 package utils
 
-import "github.com/jackc/pgx/v5/pgtype"
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+	"strings"
+)
 
 type String struct {
-	StringPointer *string
+	String string
 }
 
-func (s String) PointerToPgText() pgtype.Text {
-	if s.StringPointer != nil && *s.StringPointer != "" {
-		return pgtype.Text{String: *s.StringPointer, Valid: true}
+func (s String) ToPgText() pgtype.Text {
+	str := strings.ReplaceAll(s.String, "%", "")
+	str = strings.TrimSpace(str)
+	if str != "" {
+		return pgtype.Text{String: s.String, Valid: true}
 	}
 	return pgtype.Text{}
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"vault/db/sqlc"
 	"vault/openapi"
 	"vault/utils"
@@ -17,10 +18,10 @@ func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsReq
 		}, StatusCode: 401}, nil
 	}
 
-	searchPhrase := utils.String{StringPointer: request.Params.SearchPhrase}
+	searchPhrase := utils.String{String: fmt.Sprintf("%%%s%%", *request.Params.SearchPhrase)}
 	items, err := v.queries.ListItemsByUser(ctx, sqlc.ListItemsByUserParams{
 		ClerkUserID: user.ID,
-		Name:        searchPhrase.PointerToPgText(),
+		Name:        searchPhrase.ToPgText(),
 		OrderBy:     string(request.Params.OrderBy),
 	})
 	if err != nil {

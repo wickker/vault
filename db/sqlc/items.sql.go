@@ -91,16 +91,16 @@ AND (name ILIKE $2 OR $2 IS NULL)
 AND deleted_at IS NULL
 ORDER BY
 CASE
-    WHEN $3::text = 'name_desc' THEN name
+WHEN $3::text = 'name_desc' THEN name
 END DESC,
 CASE
-    WHEN $3::text = 'created_at_desc' THEN created_at
+WHEN $3::text = 'created_at_desc' THEN created_at
 END DESC,
 CASE
-    WHEN $3::text = 'name_asc' THEN name
+WHEN $3::text = 'name_asc' THEN name
 END ASC,
 CASE
-    WHEN $3::text = 'created_at_asc' THEN created_at
+WHEN $3::text = 'created_at_asc' THEN created_at
 END ASC
 `
 
