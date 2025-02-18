@@ -4,10 +4,11 @@ import (
 	"context"
 	"vault/db/sqlc"
 	"vault/openapi"
+	"vault/utils"
 )
 
 // (GET /items)
-func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
+func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
 	logger := v.getLogger(ctx)
 	user, err := v.getUser(ctx)
 	if err != nil {
@@ -16,9 +17,11 @@ func (v *VaultService) GetItems(ctx context.Context, _ openapi.GetItemsRequestOb
 		}, StatusCode: 401}, nil
 	}
 
+	searchPhrase := utils.String{StringPointer: request.Params.SearchPhrase}
 	items, err := v.queries.ListItemsByUser(ctx, sqlc.ListItemsByUserParams{
 		ClerkUserID: user.ID,
-		// TODO:
+		Name:        searchPhrase.PointerToPgText(),
+		OrderBy:     string(request.Params.OrderBy),
 	})
 	if err != nil {
 		logger.Err(err).Msgf("Unable to list items by user [UserID: %s].", user.ID)

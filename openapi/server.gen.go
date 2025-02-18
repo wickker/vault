@@ -25,7 +25,7 @@ import (
 type ServerInterface interface {
 
 	// (GET /items)
-	GetItems(c *gin.Context)
+	GetItems(c *gin.Context, params GetItemsParams)
 
 	// (POST /items)
 	CreateItem(c *gin.Context)
@@ -61,6 +61,34 @@ type MiddlewareFunc func(c *gin.Context)
 // GetItems operation middleware
 func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetItemsParams
+
+	// ------------- Optional query parameter "search_phrase" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "search_phrase", c.Request.URL.Query(), &params.SearchPhrase)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter search_phrase: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Required query parameter "order_by" -------------
+
+	if paramValue := c.Query("order_by"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument order_by is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "order_by", c.Request.URL.Query(), &params.OrderBy)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter order_by: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -68,7 +96,7 @@ func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetItems(c)
+	siw.Handler.GetItems(c, params)
 }
 
 // CreateItem operation middleware
@@ -264,6 +292,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 }
 
 type GetItemsRequestObject struct {
+	Params GetItemsParams
 }
 
 type GetItemsResponseObject interface {
@@ -635,8 +664,10 @@ type strictHandler struct {
 }
 
 // GetItems operation middleware
-func (sh *strictHandler) GetItems(ctx *gin.Context) {
+func (sh *strictHandler) GetItems(ctx *gin.Context, params GetItemsParams) {
 	var request GetItemsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GetItems(ctx, request.(GetItemsRequestObject))
@@ -879,18 +910,19 @@ func (sh *strictHandler) UpdateRecord(ctx *gin.Context, recordId int32) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RXT2vcPhD9Ksv8fkexdv704lvSlrJQeii0BEIoij1xFGxJkcYtZvF3L5JsZxs73ixJ",
-	"dml9WmHNjJ5mnh5v15CqUiuJkiwka7DpLZbcLz8ao4xbaKM0GhLoP5doLc/RLanWCAlYMkLm0DQMDN5X",
-	"wmAGyWUfeMW6QHV9hylBw2BFWA5LpwY5YXZGI8UZiMx9vlGm5AQJCEknx9DXFpIwR+MCJS+fAU9k0Iay",
-	"jYPHwH7FVJlsCPelgBj85EW1I9SQMoTpcoS8Ub6aoMLtfedVQS4HjRVKQgJHy3gZu5OVRsm1gAROlvHy",
-	"FBhoTrf+WpEgLP0qRz8Jd2dOQslVBgl8Qlr5AIfRaiVt6MZxHPsZKkkofR7XuhCpz4zurDu/45fvXnfK",
-	"/wZvIIH/ogcmRi0NI8+Tpr8sN4bX4a4Z2tQITeFeZ0Wx8AUX11gomQuZL0gt+KKyYQSnFxc7oZsCFR7G",
-	"CIp2g8G7PZ7mNrSyI5N671ntWxj4hJbOVVbvBO1PyndMLoX8jDKnW0iO2Bb2+pxxwj6EkamwGTDq6NW6",
-	"GIg0bOIX/FXUi/b9ewr962xpWPvCo7X7WWWNq5lhgYRDDn3w31sOaW54iYTGQnK5BuHqOtno1CmBUBEe",
-	"T5ZtoN+ql83VgAenAeLmfQKweYyMga5G3vc3nfGDzOYvVJL4zZUkTGM+GmK8K5r0CcE42fN6gqP3FZr6",
-	"zQUkfgFTX27zNlr1LNfTGs6h73naFnZHjL+OoVlq4x/ZJTkXOZ3wS23zX0vnXEN/7EyhSVXc+N+ws3p2",
-	"uawHdmhn1pF9mzcz/aOYibJG67B4lkPrWbvdB3RV9+nS5jG8SZ92oAntzau9hiod2ts9rUWdu5uJCjXN",
-	"7wAAAP//q8k03xkUAAA=",
+	"H4sIAAAAAAAC/+RXX2vbPhT9KuH+fo8mdv/sxW/tNkZg7GGwUSglqPato2JL6pW8EYK/+5BkO27tOg1t",
+	"EzY/Vci6V0f3nnt6soFEFkoKFEZDvAGdrLBgbvmZSJJdKJIKyXB02wVqzTK0S7NWCDFoQ1xkUFUBED6U",
+	"nDCF+Lo9eBM0B+XtPSYGqgAWBot+6oSQGUwvzEDyAHhqt+8kFcxADFyYs1Noc3NhMEOyBwUrXgCPp1Af",
+	"DToXD4H9jomktA/3tYAC+MXyck+oPqQP08ZwcSddNm5y++0nK3NjY5A0lwJiOJlH88jeLBUKpjjEcDaP",
+	"5ucQgGJm5Z4VcoOFW2XoOmHfzAyXYpFCDF/QLNwBG0KsQIOkIb7eALc3PJRI6wZuDBoZJaulWhHTFr7n",
+	"1+CThxNISpGWt3ZnWxJDJXZzoSgLWygbs2Q6qcOXKbp13d4lM/XHzoY7si1nC+fG3qeVFNo3+zSKHEWl",
+	"MChcWZhSOU9cYcJ7bcu76UBqi/g/4R3E8F+4HbSwnrLQjUHVXs6I2Nq30sIiroxv20Wez1zC2S3mUmRc",
+	"ZDMjZ2xWas+w86urvdCNgfJzP4Ci/hDAhwPeZj8oqQeI+NE10ZXQcwO1uZTpei9ojye6GdSCi68oMrOC",
+	"+CTYMZwuZngeHxO26jHq5M2q6InUL+I3/J2vZzXdHYX+dbZUQS1g4cb+WaSVzZlijgb7HPrk9msODcmZ",
+	"VcWtGPmMo1K089/BgLKce4jd93hg02hZAKocmO8fKmVH6c1fqCTRuyuJ78Z0NISc6Ru1Qd4X6sv1CEef",
+	"uJl3EpDoFUx9vYvtlOpFrqf2033f87zrba4Yno6+WarPP7FLYipyOuKX6uK/lc7Zgi73ptCoKnZ+Fu2t",
+	"nk1s0AI7tjNryL7Lm1E7FBNR1nDjFy9yaC1rd/uAJushXdo0mjfq047UoYN5tbdQpWN7u+e1qHF3E1Gh",
+	"qvoTAAD//1+8kbv4FAAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
