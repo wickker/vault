@@ -87,9 +87,28 @@ const listItemsByUser = `-- name: ListItemsByUser :many
 SELECT id, name, created_at
 FROM items
 WHERE clerk_user_id = $1
+AND (name ILIKE $2 OR $2 IS NULL)
 AND deleted_at IS NULL
-ORDER BY created_at DESC
+ORDER BY
+CASE
+WHEN $3::text = 'name_desc' THEN name
+END DESC,
+CASE
+WHEN $3::text = 'created_at_desc' THEN created_at
+END DESC,
+CASE
+WHEN $3::text = 'name_asc' THEN name
+END ASC,
+CASE
+WHEN $3::text = 'created_at_asc' THEN created_at
+END ASC
 `
+
+type ListItemsByUserParams struct {
+	ClerkUserID string
+	Name        pgtype.Text
+	OrderBy     string
+}
 
 type ListItemsByUserRow struct {
 	ID        int32
@@ -97,8 +116,8 @@ type ListItemsByUserRow struct {
 	CreatedAt pgtype.Timestamp
 }
 
-func (q *Queries) ListItemsByUser(ctx context.Context, clerkUserID string) ([]ListItemsByUserRow, error) {
-	rows, err := q.db.Query(ctx, listItemsByUser, clerkUserID)
+func (q *Queries) ListItemsByUser(ctx context.Context, arg ListItemsByUserParams) ([]ListItemsByUserRow, error) {
+	rows, err := q.db.Query(ctx, listItemsByUser, arg.ClerkUserID, arg.Name, arg.OrderBy)
 	if err != nil {
 		return nil, err
 	}
