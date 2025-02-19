@@ -24,6 +24,9 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /categories)
+	GetCategories(c *gin.Context)
+
 	// (GET /items)
 	GetItems(c *gin.Context, params GetItemsParams)
 
@@ -57,6 +60,19 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// GetCategories operation middleware
+func (siw *ServerInterfaceWrapper) GetCategories(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCategories(c)
+}
 
 // GetItems operation middleware
 func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
@@ -289,6 +305,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/categories", wrapper.GetCategories)
 	router.GET(options.BaseURL+"/items", wrapper.GetItems)
 	router.POST(options.BaseURL+"/items", wrapper.CreateItem)
 	router.DELETE(options.BaseURL+"/items/:itemId", wrapper.DeleteItem)
@@ -297,6 +314,46 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/records", wrapper.CreateRecord)
 	router.DELETE(options.BaseURL+"/records/:recordId", wrapper.DeleteRecord)
 	router.PUT(options.BaseURL+"/records/:recordId", wrapper.UpdateRecord)
+}
+
+type GetCategoriesRequestObject struct {
+}
+
+type GetCategoriesResponseObject interface {
+	VisitGetCategoriesResponse(w http.ResponseWriter) error
+}
+
+type GetCategories200JSONResponse []Category
+
+func (response GetCategories200JSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCategories4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCategories4XXJSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCategories5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCategories5XXJSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetItemsRequestObject struct {
@@ -634,6 +691,9 @@ func (response UpdateRecord5XXJSONResponse) VisitUpdateRecordResponse(w http.Res
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /categories)
+	GetCategories(ctx context.Context, request GetCategoriesRequestObject) (GetCategoriesResponseObject, error)
+
 	// (GET /items)
 	GetItems(ctx context.Context, request GetItemsRequestObject) (GetItemsResponseObject, error)
 
@@ -669,6 +729,31 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
+}
+
+// GetCategories operation middleware
+func (sh *strictHandler) GetCategories(ctx *gin.Context) {
+	var request GetCategoriesRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCategories(ctx, request.(GetCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCategories")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetCategoriesResponseObject); ok {
+		if err := validResponse.VisitGetCategoriesResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetItems operation middleware
@@ -918,19 +1003,20 @@ func (sh *strictHandler) UpdateRecord(ctx *gin.Context, recordId int32) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"/g0AAP//x4xTxnsYAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

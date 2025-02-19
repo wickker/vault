@@ -4,6 +4,31 @@ info:
   version: 1.0.0
 
 paths:
+  /categories:
+    get:
+      operationId: GetCategories
+      responses:
+        200:
+          description: All categories belonging to a user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /items:
     get:
       operationId: GetItems
@@ -318,6 +343,21 @@ components:
        - message
       properties:
         message:
+          type: string
+
+    Category:
+      type: object
+      required:
+        - id
+        - color
+        - name
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        color:
           type: string
 
     Item:

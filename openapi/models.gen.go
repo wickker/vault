@@ -11,6 +11,13 @@ const (
 	NameDesc      GetItemsParamsOrderBy = "name_desc"
 )
 
+// Category defines model for Category.
+type Category struct {
+	Color string `json:"color"`
+	Id    int32  `json:"id"`
+	Name  string `json:"name"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Message string `json:"message"`
