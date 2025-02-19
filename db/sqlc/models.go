@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Category struct {
+	ID          int32
+	Name        string
+	Color       string
+	ClerkUserID string
+	CreatedAt   pgtype.Timestamp
+	UpdatedAt   pgtype.Timestamp
+	DeletedAt   pgtype.Timestamp
+}
+
 type Item struct {
 	ID          int32
 	Name        string
@@ -15,6 +25,7 @@ type Item struct {
 	CreatedAt   pgtype.Timestamp
 	UpdatedAt   pgtype.Timestamp
 	DeletedAt   pgtype.Timestamp
+	CategoryID  pgtype.Int4
 }
 
 type Record struct {

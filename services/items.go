@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgtype"
 	"vault/db/sqlc"
 	"vault/openapi"
 	"vault/utils"
@@ -21,13 +22,15 @@ func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsReq
 		Pointer: request.Params.SearchPhrase,
 		Like:    true,
 	}
+	categoryID := utils.Number{Pointer: request.Params.CategoryId}
 	items, err := v.queries.ListItemsByUser(ctx, sqlc.ListItemsByUserParams{
 		ClerkUserID: user.ID,
 		Name:        searchPhrase.ToPgText(),
 		OrderBy:     string(request.Params.OrderBy),
+		CategoryID:  categoryID.ToPgInt4(),
 	})
 	if err != nil {
-		logger.Err(err).Msgf("Unable to list items by user [UserID: %s].", user.ID)
+		logger.Err(err).Msgf("Unable to list items by user [UserID: %s][Request: %+v].", user.ID, request.Params)
 		return openapi.GetItems5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -36,9 +39,10 @@ func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsReq
 	result := openapi.GetItems200JSONResponse{}
 	for _, item := range items {
 		result = append(result, openapi.Item{
-			Id:        item.ID,
-			Name:      item.Name,
-			CreatedAt: item.CreatedAt.Time.String(),
+			Id:         item.ID,
+			Name:       item.Name,
+			CreatedAt:  item.CreatedAt.Time.String(),
+			CategoryId: item.CategoryID.Int32,
 		})
 	}
 
@@ -58,18 +62,23 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 	item, err := v.queries.CreateItem(ctx, sqlc.CreateItemParams{
 		Name:        request.Body.Name,
 		ClerkUserID: user.ID,
+		CategoryID: pgtype.Int4{
+			Int32: request.Body.CategoryId,
+			Valid: true,
+		},
 	})
 	if err != nil {
-		logger.Err(err).Msgf("Unable to create item [Name: %s][ClerkUserID: %s].", request.Body.Name, user.ID)
+		logger.Err(err).Msgf("Unable to create item [Request: %+v][ClerkUserID: %s].", request.Body, user.ID)
 		return openapi.CreateItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
 	}
 
 	return openapi.CreateItem201JSONResponse{
-		Name:      item.Name,
-		Id:        item.ID,
-		CreatedAt: item.CreatedAt.Time.String(),
+		Name:       item.Name,
+		Id:         item.ID,
+		CreatedAt:  item.CreatedAt.Time.String(),
+		CategoryId: item.CategoryID.Int32,
 	}, nil
 }
 
@@ -144,19 +153,28 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 		ID:          request.ItemId,
 		Name:        request.Body.Name,
 		ClerkUserID: user.ID,
+		CategoryID: pgtype.Int4{
+			Int32: request.Body.CategoryId,
+			Valid: true,
+		},
 	})
 	if err != nil {
-		logger.Err(err).Msgf("Unable to update item [ID: %v][Name: %s][ClerkUserID: %s].", request.ItemId, request.Body.Name, user.ID)
+		logger.Err(err).Msgf("Unable to update item [Request: %+v][ClerkUserID: %s].", request, user.ID)
 		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
 	}
 	if item.ID == 0 {
-		logger.Err(err).Msgf("Unable to find item to update [ID: %v][Name: %s][ClerkUserID: %s].", request.ItemId, request.Body.Name, user.ID)
+		logger.Err(err).Msgf("Unable to find item to update [Request: %+v][ClerkUserID: %s].", request, user.ID)
 		return openapi.UpdateItem5XXJSONResponse{Body: openapi.Error{
 			Message: "Item not found",
 		}, StatusCode: 500}, nil
 	}
 
-	return openapi.UpdateItem200JSONResponse{Id: item.ID, Name: item.Name, CreatedAt: item.CreatedAt.Time.String()}, nil
+	return openapi.UpdateItem200JSONResponse{
+		Id:         item.ID,
+		Name:       item.Name,
+		CreatedAt:  item.CreatedAt.Time.String(),
+		CategoryId: item.CategoryID.Int32,
+	}, nil
 }

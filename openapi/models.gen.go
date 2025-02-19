@@ -18,9 +18,10 @@ type Error struct {
 
 // Item defines model for Item.
 type Item struct {
-	CreatedAt string `json:"createdAt"`
-	Id        int32  `json:"id"`
-	Name      string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	CreatedAt  string `json:"created_at"`
+	Id         int32  `json:"id"`
+	Name       string `json:"name"`
 }
 
 // Record defines model for Record.
@@ -33,6 +34,7 @@ type Record struct {
 // GetItemsParams defines parameters for GetItems.
 type GetItemsParams struct {
 	SearchPhrase *string               `form:"search_phrase,omitempty" json:"search_phrase,omitempty"`
+	CategoryId   *int32                `form:"category_id,omitempty" json:"category_id,omitempty"`
 	OrderBy      GetItemsParamsOrderBy `form:"order_by" json:"order_by"`
 }
 
@@ -41,12 +43,14 @@ type GetItemsParamsOrderBy string
 
 // CreateItemJSONBody defines parameters for CreateItem.
 type CreateItemJSONBody struct {
-	Name string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	Name       string `json:"name"`
 }
 
 // UpdateItemJSONBody defines parameters for UpdateItem.
 type UpdateItemJSONBody struct {
-	Name string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	Name       string `json:"name"`
 }
 
 // GetRecordsByItemParams defines parameters for GetRecordsByItem.
