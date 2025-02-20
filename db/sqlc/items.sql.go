@@ -86,6 +86,39 @@ func (q *Queries) GetItem(ctx context.Context, id int32) (GetItemRow, error) {
 	return i, err
 }
 
+const listItemsByCategory = `-- name: ListItemsByCategory :many
+SELECT id
+FROM items
+WHERE category_id = $1
+AND clerk_user_id = $2
+AND deleted_at IS NULL
+`
+
+type ListItemsByCategoryParams struct {
+	CategoryID  pgtype.Int4
+	ClerkUserID string
+}
+
+func (q *Queries) ListItemsByCategory(ctx context.Context, arg ListItemsByCategoryParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, listItemsByCategory, arg.CategoryID, arg.ClerkUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listItemsByUser = `-- name: ListItemsByUser :many
 SELECT id, name, created_at, category_id
 FROM items

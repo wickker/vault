@@ -9,11 +9,67 @@ import (
 	"context"
 )
 
+const createCategory = `-- name: CreateCategory :one
+INSERT INTO categories (name, color, clerk_user_id)
+VALUES ($1, $2, $3)
+RETURNING id, name, color, clerk_user_id, created_at, updated_at, deleted_at
+`
+
+type CreateCategoryParams struct {
+	Name        string
+	Color       string
+	ClerkUserID string
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Color, arg.ClerkUserID)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Color,
+		&i.ClerkUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const deleteCategory = `-- name: DeleteCategory :one
+UPDATE categories
+SET deleted_at = NOW()
+WHERE id = $1
+AND clerk_user_id = $2
+RETURNING id, name, color, clerk_user_id, created_at, updated_at, deleted_at
+`
+
+type DeleteCategoryParams struct {
+	ID          int32
+	ClerkUserID string
+}
+
+func (q *Queries) DeleteCategory(ctx context.Context, arg DeleteCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, deleteCategory, arg.ID, arg.ClerkUserID)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Color,
+		&i.ClerkUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const listCategoriesByUser = `-- name: ListCategoriesByUser :many
 SELECT id, name, color
 FROM categories
 WHERE clerk_user_id = $1
 AND deleted_at IS NULL
+ORDER BY name
 `
 
 type ListCategoriesByUserRow struct {
@@ -40,4 +96,40 @@ func (q *Queries) ListCategoriesByUser(ctx context.Context, clerkUserID string) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCategory = `-- name: UpdateCategory :one
+UPDATE categories
+SET name = $1,
+color = $2
+WHERE id = $3
+AND clerk_user_id = $4
+RETURNING id, name, color, clerk_user_id, created_at, updated_at, deleted_at
+`
+
+type UpdateCategoryParams struct {
+	Name        string
+	Color       string
+	ID          int32
+	ClerkUserID string
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, updateCategory,
+		arg.Name,
+		arg.Color,
+		arg.ID,
+		arg.ClerkUserID,
+	)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Color,
+		&i.ClerkUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }

@@ -37,6 +37,13 @@ CASE
 WHEN @order_by::text = 'created_at_asc' THEN created_at
 END ASC;
 
+-- name: ListItemsByCategory :many
+SELECT id
+FROM items
+WHERE category_id = $1
+AND clerk_user_id = $2
+AND deleted_at IS NULL;
+
 -- name: UpdateItem :one
 UPDATE items
 SET name = $1,

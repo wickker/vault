@@ -38,6 +38,18 @@ type Record struct {
 	Value string `json:"value"`
 }
 
+// CreateCategoryJSONBody defines parameters for CreateCategory.
+type CreateCategoryJSONBody struct {
+	Color string `json:"color"`
+	Name  string `json:"name"`
+}
+
+// UpdateCategoryJSONBody defines parameters for UpdateCategory.
+type UpdateCategoryJSONBody struct {
+	Color string `json:"color"`
+	Name  string `json:"name"`
+}
+
 // GetItemsParams defines parameters for GetItems.
 type GetItemsParams struct {
 	SearchPhrase *string               `form:"search_phrase,omitempty" json:"search_phrase,omitempty"`
@@ -77,6 +89,12 @@ type UpdateRecordJSONBody struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody CreateCategoryJSONBody
+
+// UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
+type UpdateCategoryJSONRequestBody UpdateCategoryJSONBody
 
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody CreateItemJSONBody

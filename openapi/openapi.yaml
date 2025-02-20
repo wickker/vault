@@ -28,6 +28,113 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    post:
+      operationId: CreateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                color:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+                - color
+      responses:
+        201:
+          description: Newly created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /categories/{categoryId}:
+    delete:
+      operationId: DeleteCategory
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        204:
+          description: Deleted category
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: UpdateCategory
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                color:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+                - color
+      responses:
+        200:
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /items:
     get:
