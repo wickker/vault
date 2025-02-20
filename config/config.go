@@ -7,6 +7,7 @@ type EnvConfig struct {
 	ClerkSecretKey  string `env:"CLERK_SECRET_KEY"`
 	DatabaseURL     string `env:"DATABASE_URL"`
 	FrontendOrigins string `env:"FRONTEND_ORIGINS" envDefault:"http://localhost:5173"`
+	EncryptionKey   string `env:"ENCRYPTION_KEY"`
 }
 
 func (c EnvConfig) IsDev() bool {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"vault/db/sqlc"
 	"vault/openapi"
+	"vault/utils"
 )
 
 // (GET /records)
@@ -43,10 +44,18 @@ func (v *VaultService) GetRecordsByItem(ctx context.Context, request openapi.Get
 
 	records := make([]openapi.Record, len(recordsByItem))
 	for i, r := range recordsByItem {
+		decrypted, err := utils.Decrypt(r.Value, []byte(v.encryptionKey))
+		if err != nil {
+			logger.Err(err).Msgf("Unable to decrypt value [RecordID: %v].", r.ID)
+			return openapi.GetRecordsByItem5XXJSONResponse{Body: openapi.Error{
+				Message: err.Error(),
+			}, StatusCode: 500}, nil
+		}
+
 		records[i] = openapi.Record{
 			Id:    r.ID,
 			Name:  r.Name,
-			Value: r.Value,
+			Value: decrypted,
 		}
 	}
 	return openapi.GetRecordsByItem200JSONResponse{
@@ -82,9 +91,16 @@ func (v *VaultService) CreateRecord(ctx context.Context, request openapi.CreateR
 		}, StatusCode: 500}, nil
 	}
 
-	record, err := v.queries.CreateRecord(ctx, sqlc.CreateRecordParams{Name: request.Body.Name, Value: request.Body.Value, ItemID: request.Body.ItemId})
+	encrypted, err := utils.Encrypt(request.Body.Value, []byte(v.encryptionKey))
 	if err != nil {
-		logger.Err(err).Msgf("Unable to create record [Name: %s][Value: %s][ItemID: %v].", request.Body.Name, request.Body.Value, request.Body.ItemId)
+		logger.Err(err).Msgf("Unable to encrypt record value [Request: %+v].", request)
+		return openapi.CreateRecord5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
+	record, err := v.queries.CreateRecord(ctx, sqlc.CreateRecordParams{Name: request.Body.Name, Value: encrypted, ItemID: request.Body.ItemId})
+	if err != nil {
+		logger.Err(err).Msgf("Unable to create record [Name: %s][Value: %s][ItemID: %v].", request.Body.Name, encrypted, request.Body.ItemId)
 		return openapi.CreateRecord5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -93,7 +109,7 @@ func (v *VaultService) CreateRecord(ctx context.Context, request openapi.CreateR
 	return openapi.CreateRecord201JSONResponse{
 		Id:    record.ID,
 		Name:  record.Name,
-		Value: record.Value,
+		Value: request.Body.Value,
 	}, nil
 }
 
@@ -160,13 +176,20 @@ func (v *VaultService) UpdateRecord(ctx context.Context, request openapi.UpdateR
 		}, StatusCode: 500}, nil
 	}
 
+	encrypted, err := utils.Encrypt(request.Body.Value, []byte(v.encryptionKey))
+	if err != nil {
+		logger.Err(err).Msgf("Unable to encrypt record value [Request: %+v].", request)
+		return openapi.UpdateRecord5XXJSONResponse{Body: openapi.Error{
+			Message: err.Error(),
+		}, StatusCode: 500}, nil
+	}
 	record, err := v.queries.UpdateRecord(ctx, sqlc.UpdateRecordParams{
 		Name:  request.Body.Name,
-		Value: request.Body.Value,
+		Value: encrypted,
 		ID:    request.RecordId,
 	})
 	if err != nil || record.ID == 0 {
-		logger.Err(err).Msgf("Unable to update record [ID: %v][Name: %s][Value: %s].", request.RecordId, request.Body.Name, request.Body.Value)
+		logger.Err(err).Msgf("Unable to update record [ID: %v][Name: %s][Value: %s].", request.RecordId, request.Body.Name, encrypted)
 		return openapi.UpdateRecord5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 500}, nil
@@ -174,7 +197,7 @@ func (v *VaultService) UpdateRecord(ctx context.Context, request openapi.UpdateR
 
 	return openapi.UpdateRecord200JSONResponse{
 		Id:    record.ID,
-		Value: record.Value,
+		Value: request.Body.Value,
 		Name:  record.Name,
 	}, nil
 }

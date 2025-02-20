@@ -43,7 +43,7 @@ func main() {
 	router := setupGin(envCfg)
 
 	protectedRoutes := router.Group("protected", ginmiddleware.OapiRequestValidator(getSwagger()))
-	vaultService := services.NewVaultService(queries, pool)
+	vaultService := services.NewVaultService(queries, pool, envCfg.EncryptionKey)
 	vaultHandler := openapi.NewStrictHandler(vaultService, nil)
 	openapi.RegisterHandlersWithOptions(protectedRoutes, vaultHandler, openapi.GinServerOptions{
 		ErrorHandler: errorHandler,
