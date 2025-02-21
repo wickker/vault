@@ -24,6 +24,18 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /categories)
+	GetCategories(c *gin.Context)
+
+	// (POST /categories)
+	CreateCategory(c *gin.Context)
+
+	// (DELETE /categories/{categoryId})
+	DeleteCategory(c *gin.Context, categoryId int32)
+
+	// (PUT /categories/{categoryId})
+	UpdateCategory(c *gin.Context, categoryId int32)
+
 	// (GET /items)
 	GetItems(c *gin.Context, params GetItemsParams)
 
@@ -58,6 +70,80 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
+// GetCategories operation middleware
+func (siw *ServerInterfaceWrapper) GetCategories(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCategories(c)
+}
+
+// CreateCategory operation middleware
+func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCategory(c)
+}
+
+// DeleteCategory operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCategory(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "categoryId" -------------
+	var categoryId int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "categoryId", c.Param("categoryId"), &categoryId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter categoryId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteCategory(c, categoryId)
+}
+
+// UpdateCategory operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "categoryId" -------------
+	var categoryId int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "categoryId", c.Param("categoryId"), &categoryId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter categoryId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateCategory(c, categoryId)
+}
+
 // GetItems operation middleware
 func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 
@@ -71,6 +157,14 @@ func (siw *ServerInterfaceWrapper) GetItems(c *gin.Context) {
 	err = runtime.BindQueryParameter("form", true, false, "search_phrase", c.Request.URL.Query(), &params.SearchPhrase)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter search_phrase: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "category_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "category_id", c.Request.URL.Query(), &params.CategoryId)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_id: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -281,6 +375,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/categories", wrapper.GetCategories)
+	router.POST(options.BaseURL+"/categories", wrapper.CreateCategory)
+	router.DELETE(options.BaseURL+"/categories/:categoryId", wrapper.DeleteCategory)
+	router.PUT(options.BaseURL+"/categories/:categoryId", wrapper.UpdateCategory)
 	router.GET(options.BaseURL+"/items", wrapper.GetItems)
 	router.POST(options.BaseURL+"/items", wrapper.CreateItem)
 	router.DELETE(options.BaseURL+"/items/:itemId", wrapper.DeleteItem)
@@ -289,6 +387,169 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/records", wrapper.CreateRecord)
 	router.DELETE(options.BaseURL+"/records/:recordId", wrapper.DeleteRecord)
 	router.PUT(options.BaseURL+"/records/:recordId", wrapper.UpdateRecord)
+}
+
+type GetCategoriesRequestObject struct {
+}
+
+type GetCategoriesResponseObject interface {
+	VisitGetCategoriesResponse(w http.ResponseWriter) error
+}
+
+type GetCategories200JSONResponse []Category
+
+func (response GetCategories200JSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCategories4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCategories4XXJSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type GetCategories5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCategories5XXJSONResponse) VisitGetCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCategoryRequestObject struct {
+	Body *CreateCategoryJSONRequestBody
+}
+
+type CreateCategoryResponseObject interface {
+	VisitCreateCategoryResponse(w http.ResponseWriter) error
+}
+
+type CreateCategory201JSONResponse Category
+
+func (response CreateCategory201JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCategory4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateCategory4XXJSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type CreateCategory5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateCategory5XXJSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCategoryRequestObject struct {
+	CategoryId int32 `json:"categoryId"`
+}
+
+type DeleteCategoryResponseObject interface {
+	VisitDeleteCategoryResponse(w http.ResponseWriter) error
+}
+
+type DeleteCategory204Response struct {
+}
+
+func (response DeleteCategory204Response) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCategory4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DeleteCategory4XXJSONResponse) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type DeleteCategory5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DeleteCategory5XXJSONResponse) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCategoryRequestObject struct {
+	CategoryId int32 `json:"categoryId"`
+	Body       *UpdateCategoryJSONRequestBody
+}
+
+type UpdateCategoryResponseObject interface {
+	VisitUpdateCategoryResponse(w http.ResponseWriter) error
+}
+
+type UpdateCategory200JSONResponse Category
+
+func (response UpdateCategory200JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateCategory4XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateCategory4XXJSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type UpdateCategory5XXJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateCategory5XXJSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type GetItemsRequestObject struct {
@@ -626,6 +887,18 @@ func (response UpdateRecord5XXJSONResponse) VisitUpdateRecordResponse(w http.Res
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /categories)
+	GetCategories(ctx context.Context, request GetCategoriesRequestObject) (GetCategoriesResponseObject, error)
+
+	// (POST /categories)
+	CreateCategory(ctx context.Context, request CreateCategoryRequestObject) (CreateCategoryResponseObject, error)
+
+	// (DELETE /categories/{categoryId})
+	DeleteCategory(ctx context.Context, request DeleteCategoryRequestObject) (DeleteCategoryResponseObject, error)
+
+	// (PUT /categories/{categoryId})
+	UpdateCategory(ctx context.Context, request UpdateCategoryRequestObject) (UpdateCategoryResponseObject, error)
+
 	// (GET /items)
 	GetItems(ctx context.Context, request GetItemsRequestObject) (GetItemsResponseObject, error)
 
@@ -661,6 +934,126 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
+}
+
+// GetCategories operation middleware
+func (sh *strictHandler) GetCategories(ctx *gin.Context) {
+	var request GetCategoriesRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCategories(ctx, request.(GetCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCategories")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetCategoriesResponseObject); ok {
+		if err := validResponse.VisitGetCategoriesResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCategory operation middleware
+func (sh *strictHandler) CreateCategory(ctx *gin.Context) {
+	var request CreateCategoryRequestObject
+
+	var body CreateCategoryJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCategory(ctx, request.(CreateCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(CreateCategoryResponseObject); ok {
+		if err := validResponse.VisitCreateCategoryResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCategory operation middleware
+func (sh *strictHandler) DeleteCategory(ctx *gin.Context, categoryId int32) {
+	var request DeleteCategoryRequestObject
+
+	request.CategoryId = categoryId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCategory(ctx, request.(DeleteCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(DeleteCategoryResponseObject); ok {
+		if err := validResponse.VisitDeleteCategoryResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCategory operation middleware
+func (sh *strictHandler) UpdateCategory(ctx *gin.Context, categoryId int32) {
+	var request UpdateCategoryRequestObject
+
+	request.CategoryId = categoryId
+
+	var body UpdateCategoryJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCategory(ctx, request.(UpdateCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(UpdateCategoryResponseObject); ok {
+		if err := validResponse.VisitUpdateCategoryResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetItems operation middleware
@@ -910,19 +1303,21 @@ func (sh *strictHandler) UpdateRecord(ctx *gin.Context, recordId int32) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RXX2vbPhT9KuH+fo8mdv/sxW/tNkZg7GGwUSglqPato2JL6pW8EYK/+5BkO27tOg1t",
-	"EzY/Vci6V0f3nnt6soFEFkoKFEZDvAGdrLBgbvmZSJJdKJIKyXB02wVqzTK0S7NWCDFoQ1xkUFUBED6U",
-	"nDCF+Lo9eBM0B+XtPSYGqgAWBot+6oSQGUwvzEDyAHhqt+8kFcxADFyYs1Noc3NhMEOyBwUrXgCPp1Af",
-	"DToXD4H9jomktA/3tYAC+MXyck+oPqQP08ZwcSddNm5y++0nK3NjY5A0lwJiOJlH88jeLBUKpjjEcDaP",
-	"5ucQgGJm5Z4VcoOFW2XoOmHfzAyXYpFCDF/QLNwBG0KsQIOkIb7eALc3PJRI6wZuDBoZJaulWhHTFr7n",
-	"1+CThxNISpGWt3ZnWxJDJXZzoSgLWygbs2Q6qcOXKbp13d4lM/XHzoY7si1nC+fG3qeVFNo3+zSKHEWl",
-	"MChcWZhSOU9cYcJ7bcu76UBqi/g/4R3E8F+4HbSwnrLQjUHVXs6I2Nq30sIiroxv20Wez1zC2S3mUmRc",
-	"ZDMjZ2xWas+w86urvdCNgfJzP4Ci/hDAhwPeZj8oqQeI+NE10ZXQcwO1uZTpei9ojye6GdSCi68oMrOC",
-	"+CTYMZwuZngeHxO26jHq5M2q6InUL+I3/J2vZzXdHYX+dbZUQS1g4cb+WaSVzZlijgb7HPrk9msODcmZ",
-	"VcWtGPmMo1K089/BgLKce4jd93hg02hZAKocmO8fKmVH6c1fqCTRuyuJ78Z0NISc6Ru1Qd4X6sv1CEef",
-	"uJl3EpDoFUx9vYvtlOpFrqf2033f87zrba4Yno6+WarPP7FLYipyOuKX6uK/lc7Zgi73ptCoKnZ+Fu2t",
-	"nk1s0AI7tjNryL7Lm1E7FBNR1nDjFy9yaC1rd/uAJushXdo0mjfq047UoYN5tbdQpWN7u+e1qHF3E1Gh",
-	"qvoTAAD//1+8kbv4FAAA",
+	"H4sIAAAAAAAC/+xYW4vbPBD9K0Hf92hi76UvfutuSwmUPhRaFpYQtPaso8WWtJK8xQT/96KLHSd2nKTJ",
+	"OlD3KSaeGc3lzOFYKxSxjDMKVEkUrpCMlpBh83iPFSRMFPqZC8ZBKALmTcRSJvSDKjigEEklCE1Q6SES",
+	"67+fmciwQiEiVN1cI6+yI1RBAkIbUpxBR4TSQwJecyIgRuGjDue505zLvA7Gnl4gUjrWZyFsOptZZiAl",
+	"Tg44pTLsij1TkHU0wLVmcXC9kQCsIF5os4H6Zkw3TvY2Eu8q9ztETMTtgk/Nz0NvOM2PzNy6tNPUPoQ+",
+	"MxONqFS/+4nzVBf4BkISRlGIrqbBNNAnMw4Uc4JCdDMNprfIQxyrpSnLd/1wVSZgpqMLx4owOotRiL6A",
+	"ul9b6WwlZ1Raj+sgsAtBFVDjjDlPSWTc/RepM6mWyvRRQWYc/xfwjEL0n79eP9/tnl8vXlmXjoXAha08",
+	"BhkJwpWt8mOaTtZFTJ4gZTQhNJkoNsGTXNqp3D48HJVmX3Z22zpScS889GHA0/QLzmTH3O4N7uteWpiB",
+	"VHcsLo5Kbwf3ZYR+BZqoJQqvvDbeq0XoNdsCf7Wx5ohu3K/NlcihbMHx6mydX6Ow3fxv8CstJo5ZKvwV",
+	"fzvSSq9JGP6qqnsWlzp4DCkoaAPxk/m/AUSOBc5AgZAofFwhog/RlFQxX4jWkdH2yL1GOXv5uJy3AHJr",
+	"U20WaBMczxw9xPMOwvjBY3zROY2AnoJB6MlOclzEVCuLXSJmZgy6Uf2ag0G8g7UELKLlgi8Flnri6zxb",
+	"AOkO0JSZxy3CjoBMxCAWT0XvmgHNswqnCywj577QXdsQwu5l4w9jMm8vwHwIvWe+MQ7UeibgP5m3LfNM",
+	"C8/GoUd/3Z3Cpr1fZMNKPgvEfXKPOLiOglH9lf45SOE5DO5XDTbikMpuDCPrVXUXmM0ImSh4dyaqlN1Y",
+	"OEiY+7heXWev7ORd0YPxLTX1TgQUnID00y8YG606SHW5q8627tp9IVkd0b0dbbHm7LfkGh0LHffoNdf8",
+	"c/GkbuiZObJxY/0HXGp9vTqxSyu7Cuz7tJ2ol2IkzOqv7MNBCq9G7X4dUUUdUuWNY3i9Ou9CEzoHhw3G",
+	"SpfWdru5qFJ3I2GhsvwdAAD//90dqHN+HwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

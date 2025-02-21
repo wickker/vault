@@ -11,6 +11,13 @@ const (
 	NameDesc      GetItemsParamsOrderBy = "name_desc"
 )
 
+// Category defines model for Category.
+type Category struct {
+	Color string `json:"color"`
+	Id    int32  `json:"id"`
+	Name  string `json:"name"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Message string `json:"message"`
@@ -18,9 +25,10 @@ type Error struct {
 
 // Item defines model for Item.
 type Item struct {
-	CreatedAt string `json:"createdAt"`
-	Id        int32  `json:"id"`
-	Name      string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	CreatedAt  string `json:"created_at"`
+	Id         int32  `json:"id"`
+	Name       string `json:"name"`
 }
 
 // Record defines model for Record.
@@ -30,9 +38,22 @@ type Record struct {
 	Value string `json:"value"`
 }
 
+// CreateCategoryJSONBody defines parameters for CreateCategory.
+type CreateCategoryJSONBody struct {
+	Color string `json:"color"`
+	Name  string `json:"name"`
+}
+
+// UpdateCategoryJSONBody defines parameters for UpdateCategory.
+type UpdateCategoryJSONBody struct {
+	Color string `json:"color"`
+	Name  string `json:"name"`
+}
+
 // GetItemsParams defines parameters for GetItems.
 type GetItemsParams struct {
 	SearchPhrase *string               `form:"search_phrase,omitempty" json:"search_phrase,omitempty"`
+	CategoryId   *int32                `form:"category_id,omitempty" json:"category_id,omitempty"`
 	OrderBy      GetItemsParamsOrderBy `form:"order_by" json:"order_by"`
 }
 
@@ -41,12 +62,14 @@ type GetItemsParamsOrderBy string
 
 // CreateItemJSONBody defines parameters for CreateItem.
 type CreateItemJSONBody struct {
-	Name string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	Name       string `json:"name"`
 }
 
 // UpdateItemJSONBody defines parameters for UpdateItem.
 type UpdateItemJSONBody struct {
-	Name string `json:"name"`
+	CategoryId int32  `json:"category_id"`
+	Name       string `json:"name"`
 }
 
 // GetRecordsByItemParams defines parameters for GetRecordsByItem.
@@ -66,6 +89,12 @@ type UpdateRecordJSONBody struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody CreateCategoryJSONBody
+
+// UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
+type UpdateCategoryJSONRequestBody UpdateCategoryJSONBody
 
 // CreateItemJSONRequestBody defines body for CreateItem for application/json ContentType.
 type CreateItemJSONRequestBody CreateItemJSONBody

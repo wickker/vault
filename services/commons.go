@@ -12,16 +12,18 @@ import (
 )
 
 type VaultService struct {
-	queries *sqlc.Queries
-	dbPool  *pgxpool.Pool
+	queries       *sqlc.Queries
+	dbPool        *pgxpool.Pool
+	encryptionKey string
 }
 
 var _ openapi.StrictServerInterface = (*VaultService)(nil)
 
-func NewVaultService(queries *sqlc.Queries, dbPool *pgxpool.Pool) *VaultService {
+func NewVaultService(queries *sqlc.Queries, dbPool *pgxpool.Pool, encryptionKey string) *VaultService {
 	return &VaultService{
-		queries: queries,
-		dbPool:  dbPool,
+		queries:       queries,
+		dbPool:        dbPool,
+		encryptionKey: encryptionKey,
 	}
 }
 

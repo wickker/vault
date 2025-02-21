@@ -1,6 +1,6 @@
 -- name: CreateItem :one
-INSERT INTO items (name, clerk_user_id)
-VALUES ($1, $2)
+INSERT INTO items (name, clerk_user_id, category_id)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: DeleteItem :one
@@ -17,10 +17,11 @@ WHERE id = $1
 AND deleted_at IS NULL;
 
 -- name: ListItemsByUser :many
-SELECT id, name, created_at
+SELECT id, name, created_at, category_id
 FROM items
 WHERE clerk_user_id = $1
 AND (name ILIKE sqlc.narg('name') OR sqlc.narg('name') IS NULL)
+AND (category_id = sqlc.narg('category_id') OR sqlc.narg('category_id') IS NULL)
 AND deleted_at IS NULL
 ORDER BY
 CASE
@@ -36,9 +37,17 @@ CASE
 WHEN @order_by::text = 'created_at_asc' THEN created_at
 END ASC;
 
+-- name: ListItemsByCategory :many
+SELECT id
+FROM items
+WHERE category_id = $1
+AND clerk_user_id = $2
+AND deleted_at IS NULL;
+
 -- name: UpdateItem :one
 UPDATE items
-SET name = $1
-WHERE id = $2
-AND clerk_user_id = $3
+SET name = $1,
+category_id = $2
+WHERE id = $3
+AND clerk_user_id = $4
 RETURNING *;

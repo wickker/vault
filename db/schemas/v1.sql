@@ -33,5 +33,4 @@ CREATE TRIGGER update_updated_at BEFORE UPDATE ON records FOR EACH ROW EXECUTE P
 CREATE INDEX records_item_id_idx ON records (item_id);
 
 ALTER TABLE items
-ALTER COLUMN name
-SET DATA TYPE text COLLATE "unicode";
+ALTER COLUMN name SET DATA TYPE text COLLATE "unicode";

@@ -4,6 +4,138 @@ info:
   version: 1.0.0
 
 paths:
+  /categories:
+    get:
+      operationId: GetCategories
+      responses:
+        200:
+          description: All categories belonging to a user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: CreateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                color:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+                - color
+      responses:
+        201:
+          description: Newly created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /categories/{categoryId}:
+    delete:
+      operationId: DeleteCategory
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        204:
+          description: Deleted category
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: UpdateCategory
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                color:
+                  type: string
+                  minLength: 1
+              required:
+                - name
+                - color
+      responses:
+        200:
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        4XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        5XX:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /items:
     get:
       operationId: GetItems
@@ -13,6 +145,12 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: category_id
+          required: false
+          schema:
+            type: integer
+            format: int32
         - in: query
           name: order_by
           required: true
@@ -52,8 +190,12 @@ paths:
                 name:
                   type: string
                   minLength: 1
+                category_id:
+                  type: integer
+                  format: int32
               required:
                 - name
+                - category_id
       responses:
         201:
           description: Newly created item
@@ -118,8 +260,12 @@ paths:
                 name:
                   type: string
                   minLength: 1
+                category_id:
+                  type: integer
+                  format: int32
               required:
                 - name
+                - category_id
       responses:
         200:
           description: Updated item
@@ -306,20 +452,39 @@ components:
         message:
           type: string
 
-    Item:
+    Category:
       type: object
       required:
         - id
+        - color
         - name
-        - createdAt
       properties:
         id:
           type: integer
           format: int32
         name:
           type: string
-        createdAt:
+        color:
           type: string
+
+    Item:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - category_id
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        created_at:
+          type: string
+        category_id:
+          type: integer
+          format: int32
 
     Record:
       type: object
