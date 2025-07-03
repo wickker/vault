@@ -21,7 +21,6 @@ func Auth() gin.HandlerFunc {
 
 		claims, err := jwt.Verify(c, &jwt.VerifyParams{
 			Token: token,
-			// TODO: Cache JWK to minimize calls to Clerk API
 		})
 		if err != nil {
 			log.Err(err).Msg("Unable to verify Clerk JWT.")
