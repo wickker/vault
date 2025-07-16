@@ -78,7 +78,7 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
 	r.Use(middleware.RequestID())
-	r.Use(middleware.Auth())
+	r.Use(middleware.Auth(envCfg.FrontendOrigins))
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")

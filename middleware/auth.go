@@ -1,16 +1,18 @@
 package middleware
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"net/http"
-	"strings"
+
 	"vault/openapi"
 )
 
-func Auth() gin.HandlerFunc {
+func Auth(frontendOrigins string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.Contains(c.Request.URL.Path, "protected") {
 			return
@@ -21,6 +23,10 @@ func Auth() gin.HandlerFunc {
 
 		claims, err := jwt.Verify(c, &jwt.VerifyParams{
 			Token: token,
+			AuthorizedPartyHandler: func(azpClaim string) bool {
+				return strings.Contains(strings.ToLower(frontendOrigins),
+					strings.ToLower(azpClaim))
+			},
 		})
 		if err != nil {
 			log.Err(err).Msg("Unable to verify Clerk JWT.")
