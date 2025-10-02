@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -20,6 +21,7 @@ import (
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 
 	"vault/config"
 	"vault/db/sqlc"
@@ -32,6 +34,9 @@ func main() {
 	setupLogger()
 
 	envCfg := loadEnv()
+
+	_ = tracer.Start(tracer.WithAgentURL(envCfg.TWDatakitURL))
+	defer tracer.Stop()
 
 	pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
 	if err != nil {
@@ -67,7 +72,8 @@ func main() {
 }
 
 func setupLogger() {
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Caller().Logger()
+	//log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Caller().Logger() // non-json format
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 	zerolog.ErrorStackMarshaler = func(err error) interface{} {
 		return string(debug.Stack())
 	}
@@ -77,8 +83,10 @@ func setupLogger() {
 func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
-	r.Use(middleware.RequestID())
+	r.Use(gintrace.Middleware("vault-svc"))
+	r.Use(middleware.TraceRequest())
 	r.Use(middleware.Auth(envCfg.FrontendOrigins))
+	r.Use(middleware.LogRequest())
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")

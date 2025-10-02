@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgtype"
 	"vault/db/sqlc"
 	"vault/openapi"
 	"vault/utils"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // (GET /items)

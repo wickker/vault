@@ -3,12 +3,13 @@ package services
 import (
 	"context"
 	"errors"
+	"vault/db/sqlc"
+	"vault/openapi"
+
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"vault/db/sqlc"
-	"vault/openapi"
 )
 
 type VaultService struct {
