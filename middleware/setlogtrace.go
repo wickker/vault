@@ -1,15 +1,13 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
-func TraceRequest() gin.HandlerFunc {
+func SetLogTrace() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/" {
 			return
@@ -26,7 +24,7 @@ func TraceRequest() gin.HandlerFunc {
 		logger := log.With().
 			Str("path", c.Request.URL.Path).
 			Str("trace_id", span.Context().TraceID()).
-			Str("span_id", fmt.Sprintf("%v", span.Context().SpanID())).
+			Uint64("span_id", span.Context().SpanID()).
 			Str("request_id", requestId).
 			Logger()
 

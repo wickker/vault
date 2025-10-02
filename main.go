@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -34,6 +36,27 @@ func main() {
 	setupLogger()
 
 	envCfg := loadEnv()
+
+	if err := profiler.Start(
+		profiler.WithAgentAddr(strings.ReplaceAll(envCfg.TWDatakitURL, "http://", "")),
+		profiler.WithService("vault-svc"),
+		profiler.WithEnv(envCfg.Env),
+		//profiler.WithVersion("<APPLICATION_VERSION>"),
+		//profiler.WithTags("<KEY1>:<VALUE1>", "<KEY2>:<VALUE2>"),
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+			// The profiles below are disabled by default to keep overhead
+			// low, but can be enabled as needed.
+
+			// profiler.BlockProfile,
+			// profiler.MutexProfile,
+			// profiler.GoroutineProfile,
+		),
+	); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start profiler")
+	}
+	defer profiler.Stop()
 
 	_ = tracer.Start(tracer.WithAgentURL(envCfg.TWDatakitURL))
 	defer tracer.Stop()
@@ -84,7 +107,7 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
 	r.Use(gintrace.Middleware("vault-svc"))
-	r.Use(middleware.TraceRequest())
+	r.Use(middleware.SetLogTrace())
 	r.Use(middleware.Auth(envCfg.FrontendOrigins))
 	r.Use(middleware.LogRequest())
 
