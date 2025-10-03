@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	pgxtrace "github.com/DataDog/dd-trace-go/contrib/jackc/pgx.v5/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"github.com/caarlos0/env/v11"
@@ -41,17 +42,12 @@ func main() {
 		profiler.WithAgentAddr(strings.ReplaceAll(envCfg.TWDatakitURL, "http://", "")),
 		profiler.WithService("vault-svc"),
 		profiler.WithEnv(envCfg.Env),
-		//profiler.WithVersion("<APPLICATION_VERSION>"),
-		//profiler.WithTags("<KEY1>:<VALUE1>", "<KEY2>:<VALUE2>"),
 		profiler.WithProfileTypes(
 			profiler.CPUProfile,
 			profiler.HeapProfile,
-			// The profiles below are disabled by default to keep overhead
-			// low, but can be enabled as needed.
-
 			// profiler.BlockProfile,
 			// profiler.MutexProfile,
-			// profiler.GoroutineProfile,
+			//profiler.GoroutineProfile,
 		),
 	); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start profiler")
@@ -61,9 +57,17 @@ func main() {
 	_ = tracer.Start(tracer.WithAgentURL(envCfg.TWDatakitURL))
 	defer tracer.Stop()
 
-	pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
+	//pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
+	//if err != nil {
+	//	log.Fatal().Err(err).Msg("Unable to connect to database.")
+	//}
+	//defer pool.Close()
+
+	ctx := context.Background()
+	cfg, _ := pgxpool.ParseConfig(envCfg.DatabaseURL)
+	pool, err := pgxtrace.NewPoolWithConfig(ctx, cfg, pgxtrace.WithTraceQuery(true))
 	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to connect to database.")
+		log.Fatal().Err(err).Msg("Failed to start db pool")
 	}
 	defer pool.Close()
 	queries := sqlc.New(pool)
@@ -103,6 +107,15 @@ func setupLogger() {
 	log.Info().Msg("Setup zerolog.")
 }
 
+func GinContextToContext() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// store Gin context in the standard context
+		ctx := context.WithValue(c.Request.Context(), "gin-context", c)
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	}
+}
+
 func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
@@ -110,6 +123,7 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r.Use(middleware.SetLogTrace())
 	r.Use(middleware.Auth(envCfg.FrontendOrigins))
 	r.Use(middleware.LogRequest())
+	//r.Use(GinContextToContext())
 
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
