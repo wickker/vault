@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 	"vault/db/sqlc"
 	"vault/openapi"
 	"vault/utils"
@@ -62,7 +62,7 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 	item, err := v.queries.CreateItem(ctx, sqlc.CreateItemParams{
 		Name:        request.Body.Name,
 		ClerkUserID: user.ID,
-		CategoryID: pgtype.Int4{
+		CategoryID: sql.NullInt32{
 			Int32: request.Body.CategoryId,
 			Valid: true,
 		},
@@ -92,7 +92,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 		}, StatusCode: 401}, nil
 	}
 
-	tx, err := v.dbPool.Begin(ctx)
+	tx, err := v.dbPool.Begin()
 	if err != nil {
 		logger.Err(err).Msg("Unable to begin transaction.")
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
@@ -100,7 +100,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 		}, StatusCode: 500}, nil
 	}
 	defer func() {
-		_ = tx.Rollback(ctx)
+		_ = tx.Rollback()
 	}()
 	qtx := v.queries.WithTx(tx)
 
@@ -129,7 +129,7 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 		}, StatusCode: 500}, nil
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(); err != nil {
 		logger.Err(err).Msg("Unable to commit transaction.")
 		return openapi.DeleteItem5XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
@@ -153,7 +153,7 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 		ID:          request.ItemId,
 		Name:        request.Body.Name,
 		ClerkUserID: user.ID,
-		CategoryID: pgtype.Int4{
+		CategoryID: sql.NullInt32{
 			Int32: request.Body.CategoryId,
 			Valid: true,
 		},

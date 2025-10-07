@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,8 +16,8 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -33,11 +34,18 @@ func main() {
 
 	envCfg := loadEnv()
 
-	pool, err := pgxpool.New(context.Background(), envCfg.DatabaseURL)
+	pool, err := sql.Open("postgres", envCfg.DatabaseURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to connect to database.")
 	}
 	defer pool.Close()
+	pool.SetMaxOpenConns(25)
+	pool.SetMaxIdleConns(25)
+	pool.SetConnMaxLifetime(time.Hour)
+	pool.SetConnMaxIdleTime(15 * time.Minute)
+	if err := pool.Ping(); err != nil {
+		log.Fatal().Err(err).Msg("Unable to ping database.")
+	}
 	queries := sqlc.New(pool)
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
@@ -67,7 +75,7 @@ func main() {
 }
 
 func setupLogger() {
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Caller().Logger()
+	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 	zerolog.ErrorStackMarshaler = func(err error) interface{} {
 		return string(debug.Stack())
 	}

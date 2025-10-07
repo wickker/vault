@@ -2,24 +2,25 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"github.com/clerk/clerk-sdk-go/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"vault/db/sqlc"
 	"vault/openapi"
+
+	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type VaultService struct {
 	queries       *sqlc.Queries
-	dbPool        *pgxpool.Pool
+	dbPool        *sql.DB
 	encryptionKey string
 }
 
 var _ openapi.StrictServerInterface = (*VaultService)(nil)
 
-func NewVaultService(queries *sqlc.Queries, dbPool *pgxpool.Pool, encryptionKey string) *VaultService {
+func NewVaultService(queries *sqlc.Queries, dbPool *sql.DB, encryptionKey string) *VaultService {
 	return &VaultService{
 		queries:       queries,
 		dbPool:        dbPool,

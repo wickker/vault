@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"github.com/jackc/pgx/v5/pgtype"
 	"vault/db/sqlc"
 	"vault/openapi"
 )
@@ -78,7 +78,7 @@ func (v *VaultService) DeleteCategory(ctx context.Context, request openapi.Delet
 	}
 
 	itemsWithCategory, err := v.queries.ListItemsByCategory(ctx, sqlc.ListItemsByCategoryParams{
-		CategoryID: pgtype.Int4{
+		CategoryID: sql.NullInt32{
 			Int32: request.CategoryId,
 			Valid: true,
 		},
