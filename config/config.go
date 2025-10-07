@@ -8,6 +8,8 @@ type EnvConfig struct {
 	DatabaseURL     string `env:"DATABASE_URL"`
 	FrontendOrigins string `env:"FRONTEND_ORIGINS" envDefault:"http://localhost:5173"`
 	EncryptionKey   string `env:"ENCRYPTION_KEY"`
+	TWDatakitAddr   string `env:"TW_DATAKIT_ADDR"`
+	ServiceName     string `env:"SERVICE_NAME"`
 }
 
 func (c EnvConfig) IsDev() bool {

@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -21,6 +22,7 @@ import (
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 
 	"vault/config"
 	"vault/db/sqlc"
@@ -34,6 +36,13 @@ func main() {
 
 	envCfg := loadEnv()
 
+	fmt.Println(envCfg.TWDatakitAddr)
+
+	// setup tracer
+	_ = tracer.Start(tracer.WithAgentAddr(envCfg.TWDatakitAddr))
+	defer tracer.Stop()
+
+	// setup db
 	pool, err := sql.Open("postgres", envCfg.DatabaseURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to connect to database.")
@@ -85,6 +94,7 @@ func setupLogger() {
 func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
+	r.Use(gintrace.Middleware(envCfg.ServiceName))
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Auth(envCfg.FrontendOrigins))
 
