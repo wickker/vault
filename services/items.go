@@ -17,6 +17,8 @@ func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsReq
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	c, _ := ctx.Value("ginContext").(context.Context)
+	ctx = c
 
 	searchPhrase := utils.String{
 		Pointer: request.Params.SearchPhrase,
@@ -58,6 +60,8 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	c, _ := ctx.Value("ginContext").(context.Context)
+	ctx = c
 
 	item, err := v.queries.CreateItem(ctx, sqlc.CreateItemParams{
 		Name:        request.Body.Name,
@@ -91,6 +95,8 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	c, _ := ctx.Value("ginContext").(context.Context)
+	ctx = c
 
 	tx, err := v.dbPool.Begin()
 	if err != nil {
@@ -148,6 +154,8 @@ func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateIte
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	c, _ := ctx.Value("ginContext").(context.Context)
+	ctx = c
 
 	item, err := v.queries.UpdateItem(ctx, sqlc.UpdateItemParams{
 		ID:          request.ItemId,
