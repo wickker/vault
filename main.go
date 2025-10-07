@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,17 +11,19 @@ import (
 	"syscall"
 	"time"
 
+	sqltrace "github.com/DataDog/dd-trace-go/contrib/database/sql/v2"
+	gintrace "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 
 	"vault/config"
 	"vault/db/sqlc"
@@ -39,11 +40,12 @@ func main() {
 	fmt.Println(envCfg.TWDatakitAddr)
 
 	// setup tracer
-	_ = tracer.Start(tracer.WithAgentAddr(envCfg.TWDatakitAddr))
+	_ = tracer.Start(tracer.WithAgentAddr(envCfg.TWDatakitAddr), tracer.WithService(envCfg.ServiceName), tracer.WithEnv(envCfg.Env))
 	defer tracer.Stop()
 
 	// setup db
-	pool, err := sql.Open("postgres", envCfg.DatabaseURL)
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithDBMPropagation(tracer.DBMPropagationModeFull), sqltrace.WithService(fmt.Sprintf("%v-db", envCfg.ServiceName)))
+	pool, err := sqltrace.Open("postgres", envCfg.DatabaseURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to connect to database.")
 	}
@@ -59,7 +61,7 @@ func main() {
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
-	router := setupGin(envCfg)
+	router := setupGin(envCfg, queries)
 
 	protectedRoutes := router.Group("protected", ginmiddleware.OapiRequestValidator(getSwagger()))
 	vaultService := services.NewVaultService(queries, pool, envCfg.EncryptionKey)
@@ -91,7 +93,7 @@ func setupLogger() {
 	log.Info().Msg("Setup zerolog.")
 }
 
-func setupGin(envCfg config.EnvConfig) *gin.Engine {
+func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
 	r.Use(gintrace.Middleware(envCfg.ServiceName))
@@ -102,6 +104,16 @@ func setupGin(envCfg config.EnvConfig) *gin.Engine {
 		c.JSON(http.StatusOK, "Vault is up!")
 	})
 
+	r.GET("/truewatch", func(c *gin.Context) {
+		items, err := queries.ListItemsByUser(c.Request.Context(), sqlc.ListItemsByUserParams{
+			ClerkUserID: "user_2sNsr5VN5lkTiQhBBxJ1a97DwfM",
+			OrderBy:     "name_asc",
+		})
+		if err != nil {
+			log.Err(err).Msg("Unable to list items by user [truewatch].")
+		}
+		c.JSON(http.StatusOK, items)
+	})
 	return r
 }
 
