@@ -19,7 +19,7 @@ var ContextKeys = struct {
 	User:       "user",
 }
 
-func RequestID() gin.HandlerFunc {
+func Trace() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/" {
 			return

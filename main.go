@@ -97,7 +97,7 @@ func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
 	r.Use(gintrace.Middleware(envCfg.ServiceName))
-	r.Use(middleware.RequestID())
+	r.Use(middleware.Trace())
 	r.Use(middleware.Auth(envCfg.FrontendOrigins))
 
 	r.GET("", func(c *gin.Context) {
