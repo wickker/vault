@@ -7,7 +7,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type GinContextKey string
+var ContextKeys = struct {
+	Logger     string
+	RequestID  string
+	GinContext string
+	User       string
+}{
+	Logger:     "logger",
+	RequestID:  "requestId",
+	GinContext: "ginContext",
+	User:       "user",
+}
 
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -18,7 +28,6 @@ func RequestID() gin.HandlerFunc {
 		if requestId == "" {
 			requestId = uuid.Must(uuid.NewV7()).String()
 		}
-		c.Set("requestId", requestId)
 		c.Header("X-Request-Id", requestId)
 
 		t, _ := tracer.SpanFromContext(c.Request.Context())
@@ -28,9 +37,10 @@ func RequestID() gin.HandlerFunc {
 			Uint64("span_id", t.Context().SpanID()).
 			Str("request_id", requestId).
 			Logger()
-		c.Set("logger", logger)
 
-		c.Set("ginContext", c.Request.Context())
+		c.Set(ContextKeys.RequestID, requestId)
+		c.Set(ContextKeys.Logger, logger)
+		c.Set(ContextKeys.GinContext, c.Request.Context())
 
 		c.Next()
 	}

@@ -52,7 +52,7 @@ func Auth(frontendOrigins string) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user", u)
+		c.Set(ContextKeys.User, u)
 		c.Next()
 	}
 }

@@ -10,13 +10,15 @@ import (
 
 // (GET /records)
 func (v *VaultService) GetRecordsByItem(ctx context.Context, request openapi.GetRecordsByItemRequestObject) (openapi.GetRecordsByItemResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.GetRecordsByItem4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	// check that item belongs to user
 	item, err := v.queries.GetItem(ctx, request.Params.ItemId)
@@ -67,13 +69,15 @@ func (v *VaultService) GetRecordsByItem(ctx context.Context, request openapi.Get
 
 // (POST /records)
 func (v *VaultService) CreateRecord(ctx context.Context, request openapi.CreateRecordRequestObject) (openapi.CreateRecordResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.CreateRecord4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	// check that item belongs to user
 	item, err := v.queries.GetItem(ctx, request.Body.ItemId)
@@ -115,13 +119,15 @@ func (v *VaultService) CreateRecord(ctx context.Context, request openapi.CreateR
 
 // (DELETE /records/{recordId})
 func (v *VaultService) DeleteRecord(ctx context.Context, request openapi.DeleteRecordRequestObject) (openapi.DeleteRecordResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.DeleteRecord4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	// check that record belongs to user
 	recordUserID, err := v.queries.GetRecordUserID(ctx, request.RecordId)
@@ -152,13 +158,15 @@ func (v *VaultService) DeleteRecord(ctx context.Context, request openapi.DeleteR
 
 // (PUT /records/{recordId})
 func (v *VaultService) UpdateRecord(ctx context.Context, request openapi.UpdateRecordRequestObject) (openapi.UpdateRecordResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.UpdateRecord4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	// check that record belongs to user
 	recordUserID, err := v.queries.GetRecordUserID(ctx, request.RecordId)

@@ -10,15 +10,15 @@ import (
 
 // (GET /items)
 func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsRequestObject) (openapi.GetItemsResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.GetItems4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
-	c, _ := ctx.Value("ginContext").(context.Context)
-	ctx = c
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	searchPhrase := utils.String{
 		Pointer: request.Params.SearchPhrase,
@@ -53,15 +53,15 @@ func (v *VaultService) GetItems(ctx context.Context, request openapi.GetItemsReq
 
 // (POST /items)
 func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateItemRequestObject) (openapi.CreateItemResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.CreateItem4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
-	c, _ := ctx.Value("ginContext").(context.Context)
-	ctx = c
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	item, err := v.queries.CreateItem(ctx, sqlc.CreateItemParams{
 		Name:        request.Body.Name,
@@ -88,15 +88,15 @@ func (v *VaultService) CreateItem(ctx context.Context, request openapi.CreateIte
 
 // (DELETE /items/{itemId})
 func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteItemRequestObject) (openapi.DeleteItemResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.DeleteItem4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
-	c, _ := ctx.Value("ginContext").(context.Context)
-	ctx = c
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	tx, err := v.dbPool.Begin()
 	if err != nil {
@@ -147,15 +147,15 @@ func (v *VaultService) DeleteItem(ctx context.Context, request openapi.DeleteIte
 
 // (PUT /items/{itemId})
 func (v *VaultService) UpdateItem(ctx context.Context, request openapi.UpdateItemRequestObject) (openapi.UpdateItemResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.UpdateItem4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
-	c, _ := ctx.Value("ginContext").(context.Context)
-	ctx = c
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	item, err := v.queries.UpdateItem(ctx, sqlc.UpdateItemParams{
 		ID:          request.ItemId,

@@ -10,13 +10,15 @@ import (
 
 // (GET /categories)
 func (v *VaultService) GetCategories(ctx context.Context, _ openapi.GetCategoriesRequestObject) (openapi.GetCategoriesResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.GetCategories4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	categories, err := v.queries.ListCategoriesByUser(ctx, user.ID)
 	if err != nil {
@@ -40,14 +42,15 @@ func (v *VaultService) GetCategories(ctx context.Context, _ openapi.GetCategorie
 
 // (POST /categories)
 func (v *VaultService) CreateCategory(ctx context.Context, request openapi.CreateCategoryRequestObject) (openapi.CreateCategoryResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.CreateCategory4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
-
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 	category, err := v.queries.CreateCategory(ctx, sqlc.CreateCategoryParams{
 		Name:        request.Body.Name,
 		Color:       request.Body.Color,
@@ -69,13 +72,15 @@ func (v *VaultService) CreateCategory(ctx context.Context, request openapi.Creat
 
 // (DELETE /categories/{categoryId})
 func (v *VaultService) DeleteCategory(ctx context.Context, request openapi.DeleteCategoryRequestObject) (openapi.DeleteCategoryResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.DeleteCategory4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	itemsWithCategory, err := v.queries.ListItemsByCategory(ctx, sqlc.ListItemsByCategoryParams{
 		CategoryID: sql.NullInt32{
@@ -120,13 +125,15 @@ func (v *VaultService) DeleteCategory(ctx context.Context, request openapi.Delet
 
 // (PUT /categories/{categoryId})
 func (v *VaultService) UpdateCategory(ctx context.Context, request openapi.UpdateCategoryRequestObject) (openapi.UpdateCategoryResponseObject, error) {
-	logger := v.getLogger(ctx)
-	user, err := v.getUser(ctx)
+	ctxValues, err := v.getContextValues(ctx)
 	if err != nil {
 		return openapi.UpdateCategory4XXJSONResponse{Body: openapi.Error{
 			Message: err.Error(),
 		}, StatusCode: 401}, nil
 	}
+	ctx = ctxValues.GinContext
+	logger := ctxValues.Logger
+	user := ctxValues.User
 
 	category, err := v.queries.UpdateCategory(ctx, sqlc.UpdateCategoryParams{
 		ID:          request.CategoryId,
