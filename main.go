@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,7 +34,13 @@ import (
 )
 
 func main() {
-	setupLogger()
+	file, err := os.OpenFile("/Users/choydianchun/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	setupLogger(file)
 
 	envCfg := loadEnv()
 
@@ -85,8 +92,9 @@ func main() {
 	gracefulShutdown(server)
 }
 
-func setupLogger() {
-	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+func setupLogger(file *os.File) {
+	multi := io.MultiWriter(os.Stdout, file)
+	log.Logger = zerolog.New(multi).With().Timestamp().Caller().Logger()
 	zerolog.ErrorStackMarshaler = func(err error) interface{} {
 		return string(debug.Stack())
 	}
