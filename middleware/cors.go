@@ -1,12 +1,13 @@
 package middleware
 
 import (
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 	"time"
 	"vault/config"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func Cors(envCfg config.EnvConfig) gin.HandlerFunc {
@@ -29,6 +30,10 @@ func Cors(envCfg config.EnvConfig) gin.HandlerFunc {
 			"Access-Control-Allow-Origin",
 			"Access-Control-Request-Headers",
 			"Access-Control-Request-Method",
+			"X-Datadog-Origin",
+			"X-Datadog-Parent-Id",
+			"X-Datadog-Trace-Id",
+			"X-Datadog-Sampling-Priority",
 			"Origin",
 			"Content-Length",
 			"Content-Type",
