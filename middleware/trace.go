@@ -42,6 +42,8 @@ func Trace() gin.HandlerFunc {
 		c.Set(ContextKeys.Logger, logger)
 		c.Set(ContextKeys.GinContext, c.Request.Context())
 
+		logger.Info().Msg("Request completed.")
+
 		c.Next()
 	}
 }

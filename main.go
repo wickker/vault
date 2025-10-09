@@ -15,6 +15,7 @@ import (
 	sqltrace "github.com/DataDog/dd-trace-go/contrib/database/sql/v2"
 	gintrace "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"github.com/caarlos0/env/v11"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -39,12 +40,24 @@ func main() {
 		panic(err)
 	}
 	defer file.Close()
-
 	setupLogger(file)
 
 	envCfg := loadEnv()
 
-	fmt.Println(envCfg.TWDatakitAddr)
+	if err := profiler.Start(
+		profiler.WithAgentAddr(envCfg.TWDatakitAddr),
+		profiler.WithService(envCfg.ServiceName),
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+			profiler.BlockProfile,
+			profiler.MutexProfile,
+			profiler.GoroutineProfile,
+		),
+	); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start profiler")
+	}
+	defer profiler.Stop()
 
 	// setup tracer
 	_ = tracer.Start(tracer.WithAgentAddr(envCfg.TWDatakitAddr), tracer.WithService(envCfg.ServiceName), tracer.WithEnv(envCfg.Env))
@@ -110,6 +123,22 @@ func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
 
 	r.GET("", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
+	})
+
+	r.GET("/cpu", func(c *gin.Context) {
+		start := time.Now()
+
+		// Simulate CPU-intensive work
+		var result float64
+		for i := 0; i < 50000000; i++ {
+			result += float64(i) * 3.14159
+		}
+
+		c.JSON(200, gin.H{
+			"result":   result,
+			"duration": time.Since(start).String(),
+			"type":     "cpu_intensive",
+		})
 	})
 
 	r.GET("dbm", func(c *gin.Context) {
