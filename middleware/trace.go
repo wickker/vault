@@ -33,6 +33,7 @@ func Trace() gin.HandlerFunc {
 		t, _ := tracer.SpanFromContext(c.Request.Context())
 		logger := log.With().
 			Str("path", c.Request.URL.Path).
+			Str("method", c.Request.Method).
 			Str("trace_id", t.Context().TraceID()).
 			Uint64("span_id", t.Context().SpanID()).
 			Str("request_id", requestId).
