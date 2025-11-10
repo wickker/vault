@@ -155,7 +155,7 @@ func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
 }
 
 func gracefulShutdown(server *http.Server) {
-	channel := make(chan os.Signal)
+	channel := make(chan os.Signal, 1)
 	signal.Notify(channel, syscall.SIGINT, syscall.SIGTERM)
 	<-channel
 	log.Info().Msg("Shutting down server.")
