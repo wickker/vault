@@ -22,7 +22,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -123,33 +122,6 @@ func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
 
 	r.GET("", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "Vault is up!")
-	})
-
-	r.GET("/cpu", func(c *gin.Context) {
-		start := time.Now()
-
-		// Simulate CPU-intensive work
-		var result float64
-		for i := 0; i < 50000000; i++ {
-			result += float64(i) * 3.14159
-		}
-
-		c.JSON(200, gin.H{
-			"result":   result,
-			"duration": time.Since(start).String(),
-			"type":     "cpu_intensive",
-		})
-	})
-
-	r.GET("dbm", func(c *gin.Context) {
-		items, err := queries.ListItemsByUser(c.Request.Context(), sqlc.ListItemsByUserParams{
-			ClerkUserID: "user_2sNsr5VN5lkTiQhBBxJ1a97DwfM",
-		})
-		if err != nil {
-			log.Err(err).Msg("Unable to get test user items.")
-			c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		c.JSON(http.StatusOK, items)
 	})
 	return r
 }
