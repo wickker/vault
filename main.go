@@ -80,7 +80,7 @@ func main() {
 
 	clerk.SetKey(envCfg.ClerkSecretKey)
 
-	router := setupGin(envCfg, queries)
+	router := setupGin(envCfg)
 
 	protectedRoutes := router.Group("protected", ginmiddleware.OapiRequestValidator(getSwagger()))
 	vaultService := services.NewVaultService(queries, pool, envCfg.EncryptionKey)
@@ -113,7 +113,7 @@ func setupLogger(file *os.File) {
 	log.Info().Msg("Setup zerolog.")
 }
 
-func setupGin(envCfg config.EnvConfig, queries *sqlc.Queries) *gin.Engine {
+func setupGin(envCfg config.EnvConfig) *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors(envCfg))
 	r.Use(gintrace.Middleware(envCfg.ServiceName))
